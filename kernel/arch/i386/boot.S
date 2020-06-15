@@ -24,9 +24,6 @@ stack_top:
 .global _start
 .type _start, @function
 _start:
-	# first things first - disable interrupts
-	cli
-
 	# Setup stack
 	movl $stack_top, %esp
 
