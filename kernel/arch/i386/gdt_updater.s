@@ -13,9 +13,7 @@ gdt_flush:
 	movl 4(%esp), %eax
 	lgdt (%eax)
 
-	# Re-enable interrupts
-	sti
-
+	
 	# Load Data Segment Registers
 	movw $0x10, %ax
 	movw %ax, %ds
@@ -27,4 +25,7 @@ gdt_flush:
 	# Longjump to load code register
 	jmp $0x08,$.flush
 .flush:
+	# Re-enable interrupts
+	sti
+
 	ret
