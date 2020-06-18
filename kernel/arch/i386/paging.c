@@ -152,8 +152,8 @@ void initialize_paging(){
   frames = (uint32_t*)kmalloc(INDEX_FROM_BIT(num_frames));
   memset(frames, 0, INDEX_FROM_BIT(num_frames));
 
-  // Create the page directory
-  kernel_directory = (page_directory_t*)kmalloc(sizeof(page_directory_t));
+  // Create the page directoryc
+  kernel_directory = (page_directory_t*)kmalloc_a(sizeof(page_directory_t));
   memset(kernel_directory, 0, sizeof(page_directory_t));
   current_directory = kernel_directory;
 
@@ -190,8 +190,8 @@ page_t* get_page(uint32_t address, int create, page_directory_t* dir){
   if (dir->page_tables[table_index]){
     return &dir->page_tables[table_index]->pages[address%1024];
   } else if (create) {
-    uint32_t tmp = 0;;
-    dir->page_tables[table_index] = (page_table_t*)kmalloc(sizeof(page_table_t));
+    uint32_t tmp = 0;
+    dir->page_tables[table_index] = (page_table_t*)kmalloc_ap(sizeof(page_table_t), &tmp);
     memset(dir->page_tables[table_index], 0, sizeof(page_table_t));
     dir->page_tables_physical[table_index] = tmp | 0x7; // Present, RW, US
     return &dir->page_tables[table_index]->pages[address%1024];

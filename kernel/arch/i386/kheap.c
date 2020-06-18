@@ -13,7 +13,7 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t* phys){
 
   // If not 4k-aligned, set to the next available 4k-aligned address
   if (align == 1 && (placement_address & 0x00000FFF)){
-    placement_address &= 0x00000FFF;
+    placement_address &= 0xFFFFF000;
     placement_address += 0x1000;
   }
 

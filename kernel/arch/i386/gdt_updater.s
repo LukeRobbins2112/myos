@@ -6,7 +6,7 @@
 	.type gdt_flush, @function
 
 gdt_flush:
-	# Disable Interrupts
+	# disable interrupts
 	cli
 
 	# Load the GDT
@@ -25,7 +25,4 @@ gdt_flush:
 	# Longjump to load code register
 	jmp $0x08,$.flush
 .flush:
-	# Re-enable interrupts
-	sti
-
 	ret
