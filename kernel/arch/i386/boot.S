@@ -33,7 +33,7 @@ boot_page_table0:
 .type _start, @function
 _start:
 
-
+	xchgw %bx, %bx
 	# physical addr of boot_page_table0
 	movl $(boot_page_table0 - 0xC0000000), %edi
 
@@ -46,14 +46,15 @@ _start:
 	# only map the kernel (for now)
 	# First comparison skips addresses 0-kernel_start
 	# Second comparison skips addresses kernel_end+
-	cmpl (_kernel_start - 0xC0000000), %esi
+	cmpl $(_kernel_start - 0xC0000000), %esi
 	jl 2f
-	cmpl (_kernel_end - 0xC0000000), %esi
+	cmpl $(_kernel_end - 0xC0000000), %esi
 	jge 3f
 
-
-	# if we didn't skip, we're in kernel addresses
+	# at this point we're in kernel addresses
 	# identity map these entries
+	xchgw %bx, %bx
+
 	movl %esi, %edx
 	orl $0x003, %edx
 	movl %edx, (%edi)
@@ -68,7 +69,8 @@ _start:
 
 3:
 	# Map VGA video memory to 0xC03FF000 as "present, writable"
-	movl $(0x000B8000 | $0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
+	xchgw %bx, %bx
+	movl $(0x000B8000 | 0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
 
 identity_map:	
 	# Now it's time to actually map the kernel
