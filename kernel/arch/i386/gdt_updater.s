@@ -10,11 +10,12 @@ gdt_flush:
 	cli
 
 	# Load the GDT
+	xchgw %bx, %bx
 	movl 4(%esp), %eax
 	lgdt (%eax)
 
 	# Re-enable interrupts
-	sti
+	#sti
 
 	# Load Data Segment Registers
 	movw $0x10, %ax

@@ -33,7 +33,6 @@ boot_page_table0:
 .type _start, @function
 _start:
 
-	xchgw %bx, %bx
 	# physical addr of boot_page_table0
 	movl $(boot_page_table0 - 0xC0000000), %edi
 
@@ -53,8 +52,6 @@ _start:
 
 	# at this point we're in kernel addresses
 	# identity map these entries
-	xchgw %bx, %bx
-
 	movl %esi, %edx
 	orl $0x003, %edx
 	movl %edx, (%edi)
@@ -69,7 +66,6 @@ _start:
 
 3:
 	# Map VGA video memory to 0xC03FF000 as "present, writable"
-	xchgw %bx, %bx
 	movl $(0x000B8000 | 0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
 
 identity_map:	
@@ -109,6 +105,7 @@ enable_paging:
 	# -------------------------------
 	
 	# Setup stack
+	xchgw %bx, %bx
 	movl $stack_top, %esp
 
 	# Call the global constructors.
