@@ -105,7 +105,6 @@ enable_paging:
 	# -------------------------------
 	
 	# Setup stack
-	xchgw %bx, %bx
 	movl $stack_top, %esp
 
 	# Call the global constructors.

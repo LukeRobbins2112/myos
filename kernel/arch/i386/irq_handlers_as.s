@@ -36,6 +36,12 @@
 .global irq13_handler
 .global irq14_handler
 .global irq15_handler	
+
+# Page Fault Handler
+.global page_fault
+.global page_fault_handler
+
+# IRQ definitions
 	
 irq0:
 	pusha
@@ -131,6 +137,15 @@ irq15:
 	pusha
 	call irq15_handler
 	popa	
+	iret
+
+
+# setup page fault handler
+page_fault:
+	xchgw %bx, %bx
+	pusha
+	call page_fault_handler
+	popa
 	iret
 
 load_idt:

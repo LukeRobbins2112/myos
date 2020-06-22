@@ -80,3 +80,9 @@ void irq14_handler(void) {
 void irq15_handler(void) {
   PIC_sendEOI(15);
 }
+
+
+// Page Fault Handler
+void page_fault_handler(){
+  // Do nothing for now
+}

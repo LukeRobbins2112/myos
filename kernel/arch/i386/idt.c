@@ -167,6 +167,31 @@ void idt_init(){
   IDT_entries[47].zero = 0;
   IDT_entries[47].type_attr = INTERRUPT_GATE;
 
+
+
+
+
+
+
+  // ---------------------------------
+  // Page Fault Handler
+  // ---------------------------------
+  extern int page_fault();
+  uint32_t page_fault_addr = (uint32_t)page_fault;
+  IDT_entries[14].offset_low = page_fault_addr & 0xFFFF; // Lower 2 bytes
+  IDT_entries[14].offset_high = (page_fault_addr >> 16) & 0xFFFF; // Higher 2 bytes
+  IDT_entries[14].selector = KERNEL_CODE_SEGMENT;
+  IDT_entries[14].zero = 0;
+  IDT_entries[14].type_attr = INTERRUPT_GATE;
+
+
+
+
+
+
+
+  
+
   // Load the IDT Table
   struct IDT_ptr idt_ptr;
   idt_ptr.limit = (sizeof(struct IDT_entry) * 256) - 1;

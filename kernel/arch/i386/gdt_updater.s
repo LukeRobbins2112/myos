@@ -10,7 +10,6 @@ gdt_flush:
 	cli
 
 	# Load the GDT
-	xchgw %bx, %bx
 	movl 4(%esp), %eax
 	lgdt (%eax)
 
