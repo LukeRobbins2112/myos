@@ -6,11 +6,30 @@
 #define KERNEL_CODE_SEGMENT 0x8
 #define INTERRUPT_GATE 0x8E
 
+// DESCRIPTOR TABLE
+// 256 is the standard size
+struct IDT_entry IDT_entries[256];
 
 void idt_init(){
 
-  extern int load_idt();
+  // IDT [32-47]
+  setup_interrupt_service_routines();
 
+  // IDT [14]
+  setup_page_fault_handler();
+
+  // Load the IDT Table -- Assembly function for lidt call
+  extern int load_idt();
+  struct IDT_ptr idt_ptr;
+  idt_ptr.limit = (sizeof(struct IDT_entry) * 256) - 1;
+  idt_ptr.base = (uint32_t)&IDT_entries[0];
+  load_idt((uint32_t)&idt_ptr);
+
+}
+
+void setup_interrupt_service_routines() {
+
+ 
   // Refer to assembly ISRs
   extern int irq0();
   extern int irq1();
@@ -51,9 +70,6 @@ void idt_init(){
   remap_PIC(MASTER_OFFSET, SLAVE_OFFSET);
 
   // Fill IDT
-  // 256 is the standard size
-  struct IDT_entry IDT_entries[256];
-
 
   irq0_addr = (uint32_t)irq0;
   IDT_entries[32].offset_low = irq0_addr & 0xFFFF; // Lower 2 bytes
@@ -167,15 +183,13 @@ void idt_init(){
   IDT_entries[47].zero = 0;
   IDT_entries[47].type_attr = INTERRUPT_GATE;
 
+}
 
 
-
-
-
-
-  // ---------------------------------
-  // Page Fault Handler
-  // ---------------------------------
+// ---------------------------------
+// Page Fault Handler
+// ---------------------------------
+void setup_page_fault_handler(){
   extern int page_fault();
   uint32_t page_fault_addr = (uint32_t)page_fault;
   IDT_entries[14].offset_low = page_fault_addr & 0xFFFF; // Lower 2 bytes
@@ -183,18 +197,4 @@ void idt_init(){
   IDT_entries[14].selector = KERNEL_CODE_SEGMENT;
   IDT_entries[14].zero = 0;
   IDT_entries[14].type_attr = INTERRUPT_GATE;
-
-
-
-
-
-
-
-  
-
-  // Load the IDT Table
-  struct IDT_ptr idt_ptr;
-  idt_ptr.limit = (sizeof(struct IDT_entry) * 256) - 1;
-  idt_ptr.base = (uint32_t)&IDT_entries[0];
-  load_idt((uint32_t)&idt_ptr);
 }

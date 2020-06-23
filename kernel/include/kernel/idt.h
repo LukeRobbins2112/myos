@@ -22,6 +22,13 @@ struct IDT_entry {
 } __attribute__((packed));
 
 
+
+// -----------------------------
+// Individual IDT entry setup
+// -----------------------------
+void setup_interrupt_service_routines();
+void setup_page_fault_handler();
+
 // ----------------------
 // idt_init() definition
 // ----------------------

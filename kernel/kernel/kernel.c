@@ -13,15 +13,15 @@ void kernel_main(void) {
   idt_init();
 
   // Test page fault handler
-  uint32_t *ptr = (uint32_t *)0xA0000000;
-  uint32_t do_page_fault = *ptr;
+  // uint32_t *ptr = (uint32_t *)0xA0000000;
+  // uint32_t do_page_fault = *ptr;
   
   // Setup screen/graphics, print
   terminal_initialize();
   printf("Hello, kernel World!\n");
   printf("Initialized descriptor tables\n");
 
-  if (do_page_fault){
-    printf("bar is valid\n");
-  }
+  // if (do_page_fault){
+  //  printf("bar is valid\n");
+  // }
 }
