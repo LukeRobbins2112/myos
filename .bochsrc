@@ -1,4 +1,4 @@
-megs: 32
+megs: 256
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/local/share/bochs/VGABIOS-elpin-2.40
 cpu: reset_on_triple_fault=0

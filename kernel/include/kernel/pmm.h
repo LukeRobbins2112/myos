@@ -5,7 +5,7 @@
 #include "kernel/paging.h"
 
 // ** IMPORTANT ** Physical memory size
-#define PHYSICAL_MEM_SIZE 0x2000000 // 32MB
+#define PHYSICAL_MEM_SIZE 0x8000000 // 128MB
 #define FRAME_SIZE 0x1000
 
 // ----------------------------------------
