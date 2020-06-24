@@ -6,7 +6,7 @@
 
 // @TODO set the actual frames ptr
 uint32_t num_frames = PHYSICAL_MEM_SIZE / FRAME_SIZE;
-uint32_t* frames = 0x0; //(uint32_t*)kmalloc(FRAME_BITSET_FROM_ADDR(num_frames));
+uint32_t* frames = (uint32_t*)0x0; //(uint32_t*)kmalloc(FRAME_BITSET_FROM_ADDR(num_frames));
 
 
 // ----------------------------------------

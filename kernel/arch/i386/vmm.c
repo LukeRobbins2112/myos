@@ -1,6 +1,12 @@
 #include "kernel/vmm.h"
 #include "kernel/pmm.h"
 
+// -----------------------------------
+// Page Directory -- defined in boot.S
+// -----------------------------------
+extern page_directory_t* boot_page_directory;
+extern uint32_t kernel_end;
+
 
 // ---------------------------------------------------------
 // Paging Logic
@@ -8,25 +14,11 @@
 
 void initialize_paging(){
 
-  /* // Set up physical frames */
-  /* num_frames = PHYSICAL_MEM_SIZE / 0x1000; */
-  /* frames = (uint32_t*)kmalloc(FRAME_BITSET_FROM_ADDR(num_frames)); */
-  /* memset(frames, 0, FRAME_BITSET_FROM_ADDR(nframes)); */
+  // Set up initial kernel heap page table
+  page_table_t* kheap_page_table = (page_table_t*)0xD0000000;
+  
+  
 
-  /* // Create the page directory */
-  /* kernel_directory = (page_directory_t*)kmalloc(sizeof(page_directory_t)); */
-  /* memset(kernel_directory, 0, sizeof(page_directory_t)); */
-  /* current_directory = kernel_directory; */
-
-  /* // Identity-map the kernel */
-  /* int i = 0; */
-  /* while(i < placement_address){ */
-  /*   alloc_frame(get_page(i, 1, kernel_directory), 0, 0); */
-  /*   i += 0x1000; */
-  /* } */
-
-  /* // Enable paging */
-  /* switch_page_directory(kernel_directory); */
 }
 
 // @TODO implementation
@@ -42,8 +34,28 @@ void switch_page_directory(page_directory_t* page_dir){
 }
 
 // @TODO implementation
-page_t* get_page(uint32_t address, int create, page_directory_t* dir){
+page_t* get_page(uint32_t vaddr, int create, page_directory_t* dir){
 
-  return 0;
+  uint32_t pd_index = (uint32_t)vaddr >> 22;
+  uint32_t pt_index = (uint32_t)vaddr >> 12 & 0x03FF;
 
+  page_table_t* page_table = boot_page_directory->page_tables[pd_index];
+  uint32_t page_table_present = ((uint32_t)page_table & 0x1);
+  if (!page_table_present){
+    if (create){
+      // @TODO finished after heap code
+      // page_table_t new_table = (page_table_t*)kmalloc_aligned(sizeof(page_table_t));
+      // memset(*new_table, 0x0, sizeof(page_table_t));
+      // new_table |= 0x3; // Present, RW
+      // boot_page_directory[pd_index] = new_table;
+      // return &boot_page_directory->page_tables[pd_index]->pages[pt_index];
+    }
+  } else {
+    // Page Table present, get page entry and return as is
+    // Return even if not allocated - don't allocate it
+    page_t* page = &page_table->pages[pt_index];
+    return page;
+  }
+  
+  
 }

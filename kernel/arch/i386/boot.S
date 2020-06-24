@@ -22,6 +22,7 @@ stack_top:
 # setup Page Directory and first Page Table
 .section .bss, "aw", @nobits
 	.align 4096
+.global boot_page_directory
 boot_page_directory:
 	.skip 4096
 boot_page_table0:
@@ -32,7 +33,8 @@ boot_page_table0:
 .global _start
 .type _start, @function
 _start:
-
+	# immediate breakpoint
+	xchgw %bx, %bx
 	# physical addr of boot_page_table0
 	movl $(boot_page_table0 - 0xC0000000), %edi
 
@@ -105,6 +107,7 @@ enable_paging:
 	# -------------------------------
 	
 	# Setup stack
+	xchgw %bx, %bx
 	movl $stack_top, %esp
 
 	# Call the global constructors.
