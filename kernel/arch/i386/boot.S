@@ -77,6 +77,11 @@ identity_map:
 	movl $(boot_page_table0 - 0xC0000000 + 0x003), (boot_page_directory - 0xC0000000 + 0)
 	movl $(boot_page_table0 - 0xC0000000 + 0x003), (boot_page_directory - 0xC0000000 + (768 * 4))
 
+recursive_map:
+	# Set the last entry in the page directory to itself
+	xchgw %bx, %bx
+	movl $(boot_page_directory - 0xC0000000 + 0x003), (boot_page_directory - 0xC0000000 + (1023 * 4))
+
 enable_paging:
 	# Set the control registers
 
