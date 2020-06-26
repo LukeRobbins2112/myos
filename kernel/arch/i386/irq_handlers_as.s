@@ -142,12 +142,26 @@ irq15:
 
 # setup page fault handler
 page_fault:
-	xchgw %bx, %bx
+
+	# push all registers before handling 
 	pusha
+
+	# Push condition code and faulting address
+	# page_fault is not a function call, so esp was the error code
+	# pusha pushes 8*4-byte registers, aso err code is 32 bytes up
+	xchgw %bx, %bx
+	pushl 32(%esp)
+	movl %cr2, %eax
+	pushl %eax
 	call page_fault_handler
+	xchgw %bx, %bx
+	popl %eax
+
+page_present:	
 	popa
 	iret
 
+	
 load_idt:
 	xchgw %bx, %bx
 	movl 4(%esp), %eax

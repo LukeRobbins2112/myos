@@ -117,3 +117,31 @@ void free_frame(page_t* page){
   clear_frame(page->frame * 0x1000);
   page->frame = 0x0;
 }
+
+
+void alloc_table(page_table_t* page_table, int is_kernel, int is_writeable){
+
+  // If page_table is allocated, don't re-allocate
+  if ((uint32_t)page_table & 0x1){
+    return;
+  }
+
+  uint32_t frame_index = first_frame();
+  
+  // Sanity check - @TODO error here
+  if (frame_index == (uint32_t)-1){
+    return;
+  }
+  
+  // Mark this physical frame as allocated
+  set_frame(frame_index * 0x1000);
+
+  // Set page attributes
+  page_table = (page_table_t*)((uint32_t)page_table | 0x1);
+  if (is_kernel){
+    page_table = (page_table_t*)((uint32_t)page_table | 0x2);
+  }
+  if (is_writeable){
+    page_table = (page_table_t*)((uint32_t)page_table | 0x4);
+  }
+}
