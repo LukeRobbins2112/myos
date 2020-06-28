@@ -28,6 +28,14 @@ boot_page_directory:
 boot_page_table0:
 	.skip 4096
 
+# save the start and # of pages for pmm
+.section .data
+.global pmm_frames
+.global pmm_num_frames
+pmm_frames:	 .long 0x0
+pmm_num_frames:	 .long 0x0
+
+
 # The kernel entry point.
 .section .text
 .global _start
@@ -67,6 +75,16 @@ _start:
 	loop 1b
 
 3:
+	# setup pmm pages - start from the end of the kernel
+	# just doing on page for now
+	xchgw %bx, %bx
+	movl %esi, %edx
+	orl $0x003, %edx
+	movl %edx, (%edi)
+	movl $(_kernel_end), (pmm_frames - 0xC0000000)
+	movl $1024, (pmm_num_frames - 0xC0000000)
+	movl $0x12345678, (_kernel_end - 0xC0000000)
+	
 	# Map VGA video memory to 0xC03FF000 as "present, writable"
 	movl $(0x000B8000 | 0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
 
@@ -95,10 +113,10 @@ enable_paging:
 	movl %ecx, %cr0
 
 	# jump to higher half with absolute jump
-	lea 4f, %ecx
+	lea higher_half, %ecx
 	jmp *%ecx
 
-4:
+higher_half:
 	# At this point, paging is set up and enabled
 	# Unmap the identity mapping as it is now unnecessary. 
 	movl $0, boot_page_directory + 0
@@ -123,7 +141,14 @@ enable_paging:
 
 	# Hang if kernel_main unexpectedly returns.
 	cli
-5:	hlt
-	jmp 5b
+4:	hlt
+	jmp 4b
+
+
+
+# -----------------
+# Helper functions
+# -----------------
+
 	
 .size _start, . - _start

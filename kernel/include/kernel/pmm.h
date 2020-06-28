@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "kernel/paging.h"
+#include "kernel/kheap.h"
 
 // ** IMPORTANT ** Physical memory size
 #define PHYSICAL_MEM_SIZE 0x8000000 // 128MB
@@ -28,5 +29,6 @@ extern uint32_t* frames;
 void alloc_table(page_table_t* page_table, int is_kernel, int is_writeable);
 void alloc_frame(page_t* page, int is_kernel, int is_writeable);
 void free_frame(page_t* page);
+uint32_t first_frame();
 
 #endif // _PMM_H

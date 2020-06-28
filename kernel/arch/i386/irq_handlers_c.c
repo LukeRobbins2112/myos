@@ -94,21 +94,25 @@ void page_fault_handler(uint32_t faulting_addr, uint32_t error_code){
       // Get page directory virtual address (via recursive mapping)
       page_directory_t* page_directory = (page_directory_t*)0xFFFFF000;
 
-      // If page table is not present, create it
-      uint32_t page_table_phys = (uint32_t)page_directory->page_tables[pd_index];
-      if ((page_table_phys & 0x1) == 0){
-	// Create a page table, place it somewhere
-	//alloc_table(page_directory->page_tables[pd_index], 1, 1);
-      }
-
-      // Get page table virtual address
+      // Get page table physical and virtual address
+      uint32_t page_table_phys = (uint32_t)page_directory->page_tables[pd_index];      
       page_table_t* page_table = (page_table_t*)((uint32_t*)0xFFC00000 + (0x400 * pd_index));
 
-      // Check for page (should be absent -- create it)
-      if (((uint32_t)page_table->pages[pt_index].present) == 0){
-	// Create a page, place it somewhere
-	//alloc_frame(&page_table->pages[pt_index], 1, 1); 
+      // If page table is not present, create it
+      if ((page_table_phys & 0x1) == 0){
+	// Grab an available physical frame (returns index, so mult * 1000)
+	uint32_t new_table_frame = first_frame() * 0x1000;
+
+	// Add new page table to the page directory
+	page_directory->page_tables[pd_index] = (page_table_t*)(new_table_frame | 0x3);
       }
+
+      // Now add the page entry
+      page_t* newpage = &(page_table->pages[pt_index]);
+      if (!newpage->present && !newpage->frame){
+	alloc_frame(newpage, 1, 1);
+      }
+
   }
   
 }

@@ -3,10 +3,12 @@
 // ---------------------
 // Global Frame Data
 // ---------------------
+extern uint32_t pmm_num_frames;
+extern uint32_t* pmm_frames;
 
-// @TODO set the actual frames ptr
-uint32_t num_frames = PHYSICAL_MEM_SIZE / FRAME_SIZE;
-uint32_t* frames = (uint32_t*)0x0; //(uint32_t*)kmalloc(FRAME_BITSET_FROM_ADDR(num_frames));
+
+uint32_t num_frames = 0;
+uint32_t* frames = (uint32_t*)0x0;
 
 
 // ----------------------------------------
@@ -52,7 +54,7 @@ static uint32_t test_frame(uint32_t frame_addr){
 }
 
 // @TODO this is "first fit", maybe implement next-fit
-static uint32_t first_frame(){
+uint32_t first_frame(){
 
   // Use macro for consistency - just get the number of 32-bit bitfields
   uint32_t num_bitsets = FRAME_BITSET_FROM_ADDR(num_frames);
@@ -104,7 +106,6 @@ void alloc_frame(page_t* page, int is_kernel, int is_writeable){
   page->frame = frame_index;
 }
 
-
 void free_frame(page_t* page){
 
   // If page is null or has no frame, return
@@ -119,29 +120,18 @@ void free_frame(page_t* page){
 }
 
 
-void alloc_table(page_table_t* page_table, int is_kernel, int is_writeable){
+// ----------------
+// Setup
+// ----------------
 
-  // If page_table is allocated, don't re-allocate
-  if ((uint32_t)page_table & 0x1){
-    return;
-  }
+void setup_pmm(){
 
-  uint32_t frame_index = first_frame();
   
-  // Sanity check - @TODO error here
-  if (frame_index == (uint32_t)-1){
-    return;
-  }
-  
-  // Mark this physical frame as allocated
-  set_frame(frame_index * 0x1000);
+  frames = pmm_frames;  
+  num_frames = pmm_num_frames;
 
-  // Set page attributes
-  page_table = (page_table_t*)((uint32_t)page_table | 0x1);
-  if (is_kernel){
-    page_table = (page_table_t*)((uint32_t)page_table | 0x2);
-  }
-  if (is_writeable){
-    page_table = (page_table_t*)((uint32_t)page_table | 0x4);
-  }
+  // Set first 4Mb as unavailable (kernel page table)
+  // 4Mb = 1024 frames, at 1 bit per frame
+  // 1024 bits / sizeof(byte to set) = 128
+  memset(frames, 0xff, 128);
 }
