@@ -24,5 +24,12 @@ static inline void io_wait(void)
                    "2:" );
 }
 
+static inline void breakpoint(void)
+{
+    asm volatile ( "xchgw %bx, %bx\n\t"
+                   "xchgw %bx, %bx\n\t"
+		   "xchgw %bx, %bx\n\t" );
+}
+
 
 #endif // _INLINE_ASSEMBLY_H

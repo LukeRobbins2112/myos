@@ -75,15 +75,17 @@ _start:
 	loop 1b
 
 3:
-	# setup pmm pages - start from the end of the kernel
-	# just doing on page for now
+	# setup pmm pages - get first 4K-aligned page after kernel
+	# just doing one page for now
 	xchgw %bx, %bx
 	movl %esi, %edx
 	orl $0x003, %edx
 	movl %edx, (%edi)
-	movl $(_kernel_end), (pmm_frames - 0xC0000000)
-	movl $1024, (pmm_num_frames - 0xC0000000)
-	movl $0x12345678, (_kernel_end - 0xC0000000)
+	movl $(_kernel_end), %ecx
+	addl $0xFFF, %ecx
+	andl $0xFFFFF000, %ecx
+	movl %ecx, (pmm_frames - 0xC0000000)
+	movl $0x8000, (pmm_num_frames - 0xC0000000)
 	
 	# Map VGA video memory to 0xC03FF000 as "present, writable"
 	movl $(0x000B8000 | 0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
@@ -130,7 +132,6 @@ higher_half:
 	# -------------------------------
 	
 	# Setup stack
-	xchgw %bx, %bx
 	movl $stack_top, %esp
 
 	# Call the global constructors.

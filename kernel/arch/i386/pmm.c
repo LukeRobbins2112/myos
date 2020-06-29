@@ -1,4 +1,6 @@
 #include "kernel/pmm.h"
+#include "string.h"
+#include "common/inline_assembly.h"
 
 // ---------------------
 // Global Frame Data
@@ -56,6 +58,8 @@ static uint32_t test_frame(uint32_t frame_addr){
 // @TODO this is "first fit", maybe implement next-fit
 uint32_t first_frame(){
 
+  //  breakpoint();
+
   // Use macro for consistency - just get the number of 32-bit bitfields
   uint32_t num_bitsets = FRAME_BITSET_FROM_ADDR(num_frames);
   
@@ -69,7 +73,9 @@ uint32_t first_frame(){
 	uint32_t mask = 0x1 << j;
 	if ((frames[i] & mask) == 0){
 	  // Distance into bitset list + distance into this bitset
-	  return (i*32) + j;
+	  uint32_t res = (i*32) + j;
+	  set_frame(res * 0x1000);
+	  return res;
 	}
       }
     }
@@ -134,4 +140,7 @@ void setup_pmm(){
   // 4Mb = 1024 frames, at 1 bit per frame
   // 1024 bits / sizeof(byte to set) = 128
   memset(frames, 0xff, 128);
+
+  // Set the rest as free: 124MB
+  memset(&frames[32], 0x0, 3968);
 }

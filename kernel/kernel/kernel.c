@@ -19,6 +19,7 @@ void kernel_main(void) {
   // Test page fault handler
   uint32_t *ptr = (uint32_t *)0xA0000000;
   uint32_t do_page_fault = *ptr;
+  do_page_fault++;
   
   // Setup screen/graphics, print
   terminal_initialize();

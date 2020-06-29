@@ -101,7 +101,9 @@ void page_fault_handler(uint32_t faulting_addr, uint32_t error_code){
       // If page table is not present, create it
       if ((page_table_phys & 0x1) == 0){
 	// Grab an available physical frame (returns index, so mult * 1000)
+	//breakpoint();
 	uint32_t new_table_frame = first_frame() * 0x1000;
+	// breakpoint();
 
 	// Add new page table to the page directory
 	page_directory->page_tables[pd_index] = (page_table_t*)(new_table_frame | 0x3);
