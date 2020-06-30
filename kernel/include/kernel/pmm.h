@@ -30,5 +30,6 @@ void alloc_table(page_table_t* page_table, int is_kernel, int is_writeable);
 void alloc_frame(page_t* page, int is_kernel, int is_writeable);
 void free_frame(page_t* page);
 uint32_t first_frame();
+void setup_pmm();
 
 #endif // _PMM_H
