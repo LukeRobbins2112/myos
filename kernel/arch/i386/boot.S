@@ -35,6 +35,9 @@ boot_page_table0:
 pmm_frames:	 .long 0x0
 pmm_num_frames:	 .long 0x0
 
+# maintain pointer for kernel workspace
+.global k_workspace_end
+k_workspace_end: .long 0x0
 
 # The kernel entry point.
 .section .text
@@ -48,20 +51,13 @@ _start:
 
 	# First physical address to map
 	movl $0, %esi
-	# Number of pages to map (1023) - 1024th is VGA
-	movl $1023, %ecx
+	# Number of pages to map (1024)
+	# loop instruction decrements %ecx
+	movl $1024, %ecx
 
 1:
-	# only map the kernel (for now)
-	# First comparison skips addresses 0-kernel_start
-	# Second comparison skips addresses kernel_end+
-	cmpl $(_kernel_start - 0xC0000000), %esi
-	jl 2f
-	cmpl $(_kernel_end - 0xC0000000), %esi
-	jge 3f
-
-	# at this point we're in kernel addresses
-	# identity map these entries
+	# Map the first 4MB
+	# identity map: grab phys addr, mark as present, add PTE
 	movl %esi, %edx
 	orl $0x003, %edx
 	movl %edx, (%edi)
@@ -75,20 +71,26 @@ _start:
 	loop 1b
 
 3:
-	# setup pmm pages - get first 4K-aligned page after kernel
-	# just doing one page for now
+	# get the next 4K-aligned address after the kernel end
+	# set the current kernel workspace ptr to this addr
 	xchgw %bx, %bx
-	movl %esi, %edx
-	orl $0x003, %edx
-	movl %edx, (%edi)
 	movl $(_kernel_end), %ecx
 	addl $0xFFF, %ecx
 	andl $0xFFFFF000, %ecx
+	movl %ecx, (k_workspace_end - 0xC0000000)
+	
+	# setup pmm pages - get first 4K-aligned page after kernel
+	# just doing one page for now
 	movl %ecx, (pmm_frames - 0xC0000000)
 	movl $0x8000, (pmm_num_frames - 0xC0000000)
-	
+
+	# update kernel workspace to start after pmm frames
+	addl $4096, (k_workspace_end - 0xC0000000)
+
 	# Map VGA video memory to 0xC03FF000 as "present, writable"
-	movl $(0x000B8000 | 0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
+	# No longer have to do this now that you map the whole first 4MB
+	# Just use the linking adjustment, e.g. 0xC00B8000
+	# movl $(0x000B8000 | 0x003), (boot_page_table0 - 0xC0000000 + (1023*4))
 
 identity_map:	
 	# Now it's time to actually map the kernel
