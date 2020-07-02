@@ -23,9 +23,6 @@ void kernel_main(void) {
   setup_kheap();
 
   // Set up heap
-  uint32_t alloc = boot_alloc(32, 0);
-
-
   // Test page fault handler on kalloc
   uint32_t *ptr = (uint32_t *)kalloc(32, 0, kheap);
   uint32_t do_page_fault = *ptr;
@@ -35,10 +32,6 @@ void kernel_main(void) {
   terminal_initialize();
   printf("Hello, kernel World!\n");
   printf("Initialized descriptor tables\n");
-
-  if (alloc){
-    printf("Success!");
-  }
 
   if (do_page_fault){
    printf("bar is valid\n");

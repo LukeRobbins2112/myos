@@ -7,7 +7,6 @@ extern uint32_t k_workspace_end;
 static uint32_t next_alloc = (uint32_t)0x0;
 
 void setup_boot_heap(){
-  breakpoint();
   next_alloc = k_workspace_end;
 }
 
