@@ -6,9 +6,13 @@
 
 heap_t* kheap = (heap_t*)0x0;
 
-// --------------
+// ---------------------
 // Helper Functions
-// -----------------
+// ---------------------
+
+uint32_t IS_FREE(header_t* header){
+  return !(header->size & 0x1)
+}
 
 header_t* GET_HDR(void* ptr) {
   return (header_t*)(((uint32_t)ptr) - sizeof(header_t));
@@ -19,8 +23,56 @@ footer_t* GET_FTR(void* ptr){
   return (footer_t*)(((uint32_t)ptr) + hdr->size);
 }
 
+void* GET_DATA(header_t* hdr){
+  return (void*)((uint32_t)hdr + HDR_SIZE);
+}
+
 void* NEXT_BLOCK(void* ptr){
+  // Add block size to the ptr, skip past the footer, skip past next block's header
   return (void*)((uint32_t)ptr + GET_HDR(ptr)->size + FTR_SIZE + HDR_SIZE);
+}
+
+void* PREV_BLOCK(void* ptr){
+  footer_t* prev_block_footer = (footer_t*)((uint32_t)ptr - (HDR_SIZE + FTR_SIZE));
+  return (void*)((uint32_t)footer->header + HDR_SIZE);
+}
+
+void SET_HDR(void* ptr, uint32_t size, uint32_t flag){
+  header_t* header = GET_HDR(ptr);
+  header->size = size | flag;
+  header->magic = KHEAP_MAGIC;
+}
+
+void SET_FTR(void* ptr, uint32_t size) {
+  footer_t* footer = GET_FTR(ptr);
+  footer->header = GET_HDR(ptr);
+  footer->magic = KHEAP_MAGIC;
+}
+
+void SET_HDR_FTR(void* ptr, uint32_t size, uint32_t flag){
+  SET_HDR(ptr, size, flag);
+  SET_FTR(ptr, size);
+}
+
+uint32_t TOTAL_BLK_SIZE(uint32_t data_size){
+  return (data_size + HDR_SIZE + FTR_SIZE);
+}
+
+uint32_t DATA_SIZE(uint32_t fill_block_size){
+  return (full_block_size - (HDR_SIZE + FTR_SIZE));
+}
+
+free_hdr_t* FREE_HDR_FROM_LIST(freelist_data* free_links){
+  return (free_hdr_t*)((uint32_t)freelinks - sizeof(header_t));
+}
+
+void LINK_UP_FREELIST(freelist_data* free_links){
+  if (free_links->next){
+    free_links->next->freelist_data.prev = FREE_HDR_FROM_LIST(free_links);
+  }
+  if (free_links->prev){
+    free_links->prev->freelist_data.next = FREE_HDR_FROM_LIST(free_links);
+  }
 }
 
 // -----------------------
@@ -55,30 +107,54 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags){
 
   // Pointer is always to the block of mem itself, not the header
   // Use macro to get the header position when using this
-  new_heap->freelist_ptr = (void*)(start_addr + sizeof(header_t));
-
   // Set up initial heap as one giant free block
-  header_t* chunk_header = GET_HDR(new_heap->freelist_ptr);
-  chunk_header->size = size - (HDR_SIZE + FTR_SIZE);
-  chunk_header->magic = KHEAP_MAGIC;
-  footer_t* chunk_footer = GET_FTR(new_heap->freelist_ptr);
-  chunk_footer->header = chunk_header;
-  chunk_footer->magic = KHEAP_MAGIC;
-  
+  unit32_t avail_space = size - (HDR_SIZE + FTR_SIZE);
+  SET_HDR_FTR((void*)(start_addr + sizeof(header_t), avail_space, FREE_FLAG));
+  new_heap->freelist_head = (free_hdr_t*)start_addr;
+  new_heap->freelist_head->freelist_data->next = 0x0;
+  new_heap->freelist_head->freelist_data->prev = 0x0;
+
   return new_heap;
 }
 
 void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
-  void* free_itr = heap->freelist_ptr;
-  while(GET_HDR(free_itr)->size & 0x1){
-    free_itr = NEXT_BLOCK(free_itr);
-
-    if ((uint32_t)free_itr >= heap->heap_end){
-      return (void*)0x0;
-    }
+  free_hdr_t* free_itr = heap->freelist_head;
+  while(free_itr && free_itr->header.size < size){
+    free_itr = free_itr->freelist_data.next;
   }
 
+  // If we reach the end of the list w/o finding a block
+  if (!free_itr){
+    return (void*)0x0;
+  }
+
+  // Get data ptr
+  void* ptr = GET_DATA(&(free_itr->header));
+
+  // The free block includes linked list info, which we need
+  freelist_data_t freelist_links = free_iter->freelist_data;
+
+  // Also save original block size
+  uint32_t block_remainder = free_itr->header.size - size;
+
+  // Setup the current block
+  SET_HDR_FTR(ptr, size, USED_FLAG);
+
+  // Split the block if there is enough room (16+ bytes usable space)
+  if (block_remainder > TOTAL_BLK_SIZE(16)) {
+
+    void* next_block = NEXT_BLOCK(ptr);
+    SET_HDR_FTR(next_block, DATA_SIZE(block_remainder), FREE_FLAG);
+
+    // Set up links
+    freelist_data_t* new_links = (freelist_data_t*)next_block;
+    *new_links = freelist_links;
+    LINK_UP_FREELIST(new_links);
+    
+    
+  }
+  
   return free_itr;
   
 }

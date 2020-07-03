@@ -28,18 +28,28 @@ typedef struct header {
   uint32_t magic;
 } header_t;
 
+typedef struct freelist_data {
+  free_hdr_t* next;
+  free_hdr_t* prev;
+} freelist_data_t;
+
+typedef struct free_hdr {
+  header_t header;
+  freelist_data_t freelist_data;
+} free_hdr_t;
+
 typedef struct footer {
   header_t* header;
   uint32_t magic;
 } footer_t;
 
 typedef struct heap {
-  uint32_t heap_start; // Start of the heap
-  uint32_t prog_break; // Current end of alloc'd memory
-  uint32_t heap_end;   // End of available heap space; can be expanded
-  uint32_t max_size;   // Heap cannot grow larger than this
-  void* freelist_ptr;  // For iterating through available blocks
-  uint8_t flags;       // 0-bit = kernel, 1-bit = read/write
+  uint32_t heap_start;              // Start of the heap
+  uint32_t prog_break;              // Current end of alloc'd memory
+  uint32_t heap_end;                // End of available heap space; can be expanded
+  uint32_t max_size;                // Heap cannot grow larger than this
+  free_hdr_t* freelist_head;   // For iterating through available blocks
+  uint8_t flags;                    // 0-bit = kernel, 1-bit = read/write
 } heap_t;
 
 // ------------------------------------------------------------
@@ -56,6 +66,8 @@ void kfree(void* ptr, heap_t* heap);
 // --------------------------------------------------------------
 #define HDR_SIZE (sizeof(header_t))
 #define FTR_SIZE (sizeof(footer_t))
+#define FREE_FLAG 0x0
+#define USED_FLAG 0x1
 
 
 // --------------------------------------------------------------
