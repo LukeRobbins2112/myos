@@ -22,21 +22,24 @@
 // Data structure definitions
 // -------------------------------------------------------------
 
+typedef struct freelist_data freelist_data_t;
+typedef struct free_hdr free_hdr_t;
+
 typedef struct header {
   // Size = block size - sizeof(header_t) - sizeof(footer_t)
   uint32_t size;    // Low bit is alloc flag. 0 = free, 1 = allocated
   uint32_t magic;
 } header_t;
 
-typedef struct freelist_data {
+struct freelist_data {
   free_hdr_t* next;
   free_hdr_t* prev;
-} freelist_data_t;
+};
 
-typedef struct free_hdr {
+struct free_hdr {
   header_t header;
   freelist_data_t freelist_data;
-} free_hdr_t;
+};
 
 typedef struct footer {
   header_t* header;
