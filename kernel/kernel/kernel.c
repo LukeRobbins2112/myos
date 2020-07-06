@@ -34,6 +34,13 @@ void kernel_main(void) {
   printf("Initialized descriptor tables\n");
 
   if (do_page_fault){
-   printf("bar is valid\n");
+   printf("Ptr was allocated!\n");
+  }
+
+  uint32_t ptr_addr = (uint32_t)ptr;
+  kfree(ptr, kheap);
+  ptr = (uint32_t*)kalloc(32, 0, kheap);
+  if (ptr_addr == (uint32_t)ptr){
+    printf("Freed and re-allocated ptr!\n");
   }
 }

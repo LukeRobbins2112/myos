@@ -36,11 +36,23 @@ uint32_t GET_SIZE(void* ptr){
 
 void* NEXT_BLOCK(void* ptr){
   // Add block size to the ptr, skip past the footer, skip past next block's header
-  return (void*)((uint32_t)ptr + GET_SIZE(ptr) + FTR_SIZE + HDR_SIZE);
+  void* next_block = (void*)((uint32_t)ptr + GET_SIZE(ptr) + FTR_SIZE + HDR_SIZE);
+
+  if ((uint32_t)next_block > kheap->heap_end){
+    return 0x0;
+  }
+
+  return next_block;
 }
 
 void* PREV_BLOCK(void* ptr){
   footer_t* prev_block_footer = (footer_t*)((uint32_t)ptr - (HDR_SIZE + FTR_SIZE));
+
+  // If we try to go back past the beginning of the heap
+  if ((uint32_t)prev_block_footer < kheap->heap_start){
+    return 0x0;
+  }
+  
   return (void*)((uint32_t)prev_block_footer->header + HDR_SIZE);
 }
 
@@ -67,6 +79,11 @@ uint32_t TOTAL_BLK_SIZE(uint32_t data_size){
 
 uint32_t DATA_SIZE(uint32_t full_block_size){
   return (full_block_size - (HDR_SIZE + FTR_SIZE));
+}
+
+void MARK_FREE(void* ptr){
+  header_t* hdr = GET_HDR(ptr);
+  hdr->size &= (~0x1);
 }
 
 free_hdr_t* FREE_HDR_FROM_LIST(freelist_data_t* free_links){
@@ -164,7 +181,13 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
   // Otherwise, remove block from the free list
   if (block_remainder > TOTAL_BLK_SIZE(16)) {
 
+    // Get next block, make sure it's valid
     void* next_block = NEXT_BLOCK(ptr);
+    if (!next_block){
+      return 0x0;
+    }
+
+    // Setup the next block
     SET_HDR_FTR(next_block, DATA_SIZE(block_remainder), FREE_FLAG);
 
     // Set up links
@@ -175,6 +198,93 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
     REMOVE_FROM_FREELIST(&freelist_links);
   }
   
-  return free_itr;
+  return ptr;
   
+}
+
+uint8_t coalesce(void* ptr){
+
+  uint8_t performed_coalesce = 0;
+
+  // If prev block is free, coalesce left
+  // Nothing to do for freelist links; they're already set up
+  
+  header_t* prev_ptr = PREV_BLOCK(ptr);
+  header_t* prev_hdr = (prev_ptr) ? GET_HDR(prev_ptr) : 0x0;
+  if (prev_hdr && IS_FREE(prev_hdr)){
+    // Add the size of the newly freed block
+    // Include size of now unused new block's header, prev block's footer
+    prev_hdr->size += TOTAL_BLK_SIZE(GET_SIZE(ptr));
+
+    // ptr's footer now belongs to prev block
+    GET_FTR(ptr)->header = prev_hdr;
+
+    // Set ptr to ptr of coalesced block, for use in coalesce-right
+    ptr = GET_DATA(prev_hdr);
+
+    // Indicate that we performed some coalesce
+    performed_coalesce++;
+  }
+
+  // If next block is free, coalesce right
+  // If we're at the end of the heap, don't coalesce right --
+  // return result of coalesce left
+  void* next_ptr = NEXT_BLOCK(ptr);
+  if (!next_ptr){
+    return performed_coalesce;
+  }
+  header_t* next_hdr = GET_HDR(next_ptr);
+  if (IS_FREE(next_hdr)){
+    // Add size of right block to our current block size
+    header_t* cur_hdr = GET_HDR(ptr);
+    cur_hdr->size += TOTAL_BLK_SIZE(GET_SIZE(next_ptr));
+
+    // Set right block's footer to our header
+    SET_FTR(ptr);
+
+    // Fix up freelist links
+    freelist_data_t* next_ptr_links = (freelist_data_t*)next_ptr;
+    freelist_data_t* cur_ptr_links = (freelist_data_t*)ptr;
+    if (next_ptr_links && next_ptr_links->next){
+      if (cur_ptr_links && cur_ptr_links->next){
+	// If cur ptr is already on freelist, remove next ptr
+	REMOVE_FROM_FREELIST(next_ptr_links);
+      } else {
+	// If ptr has no free links, steal them from next ptr
+	*cur_ptr_links = *next_ptr_links;
+	LINK_UP_FREELIST(cur_ptr_links);
+      }
+    }
+
+    // Indicate that we performed some coalesce
+    performed_coalesce++;
+  }
+
+  return performed_coalesce;
+}
+
+void kfree(void* ptr, heap_t* heap){
+
+  breakpoint();
+
+  // Make sure ptr is non-null and allocated
+  if (!ptr || IS_FREE(GET_HDR(ptr))){
+    return;
+  }
+
+  // Mark the individual block as free
+  MARK_FREE(ptr);
+
+  uint8_t performed_coalesce = coalesce(ptr);
+
+  // If we didn't coalesce the block, we need to manually add to freelist
+  // Just append to the beginning of the list
+  if (!performed_coalesce){
+    freelist_data_t* ptr_links = (freelist_data_t*)ptr;
+    ptr_links->prev = 0x0;
+    ptr_links->next = heap->freelist_head;
+    heap->freelist_head->freelist_data.prev = (free_hdr_t*)(GET_HDR(ptr));
+    heap->freelist_head = (free_hdr_t*)(GET_HDR(ptr));
+  }
+
 }
