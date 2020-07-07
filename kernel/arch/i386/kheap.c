@@ -154,8 +154,6 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags){
 
 void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
-  breakpoint();
-  
   free_hdr_t* free_itr = heap->freelist_head;
   while(free_itr && free_itr->header.size < size){
     free_itr = free_itr->freelist_data.next;
@@ -274,8 +272,6 @@ uint8_t coalesce(void* ptr){
 }
 
 void kfree(void* ptr, heap_t* heap){
-
-  breakpoint();
 
   // Make sure ptr is non-null and allocated
   if (!ptr || IS_FREE(GET_HDR(ptr))){

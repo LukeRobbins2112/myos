@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
  
 #include <kernel/tty.h>
 #include <kernel/descriptor_table.h>
@@ -29,4 +30,9 @@ void kernel_main(void) {
 
   // Run tests
   TEST_kheap();
+
+  // Test itoa
+  char buf[32];
+  char * res = itoa(1234, buf, 10);
+  printf("Res = %s\n", res);
 }
