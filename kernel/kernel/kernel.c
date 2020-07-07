@@ -19,28 +19,14 @@ void kernel_main(void) {
   // Setup physical memory manager
   setup_pmm();
 
-  // Set up virtual memory manager
+  // Set up kernel heap
   setup_kheap();
 
-  // Set up heap
-  // Test page fault handler on kalloc
-  uint32_t *ptr = (uint32_t *)kalloc(32, 0, kheap);
-  uint32_t do_page_fault = *ptr;
-  do_page_fault++;
-  
   // Setup screen/graphics, print
   terminal_initialize();
   printf("Hello, kernel World!\n");
   printf("Initialized descriptor tables\n");
 
-  if (do_page_fault){
-   printf("Ptr was allocated!\n");
-  }
-
-  uint32_t ptr_addr = (uint32_t)ptr;
-  kfree(ptr, kheap);
-  ptr = (uint32_t*)kalloc(32, 0, kheap);
-  if (ptr_addr == (uint32_t)ptr){
-    printf("Freed and re-allocated ptr!\n");
-  }
+  // Run tests
+  TEST_kheap();
 }

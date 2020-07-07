@@ -3,6 +3,7 @@
 #include <kernel/vmm.h>
 #include <kernel/boot_heap.h>
 #include <common/inline_assembly.h>
+#include <stdio.h>
 
 heap_t* kheap = (heap_t*)0x0;
 
@@ -153,6 +154,8 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags){
 
 void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
+  breakpoint();
+  
   free_hdr_t* free_itr = heap->freelist_head;
   while(free_itr && free_itr->header.size < size){
     free_itr = free_itr->freelist_data.next;
@@ -175,8 +178,6 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
   // Setup the current block
   SET_HDR_FTR(ptr, size, USED_FLAG);
 
-  breakpoint();
-
   // Split the block if there is enough room (16+ bytes usable space)
   // Otherwise, remove block from the free list
   if (block_remainder > TOTAL_BLK_SIZE(16)) {
@@ -194,6 +195,10 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
     freelist_data_t* new_links = (freelist_data_t*)next_block;
     *new_links = freelist_links;
     LINK_UP_FREELIST(new_links);
+
+    if (free_itr == heap->freelist_head){
+      heap->freelist_head = FREE_HDR_FROM_LIST(new_links);
+    }
   } else {
     REMOVE_FROM_FREELIST(&freelist_links);
   }
@@ -245,15 +250,20 @@ uint8_t coalesce(void* ptr){
     // Fix up freelist links
     freelist_data_t* next_ptr_links = (freelist_data_t*)next_ptr;
     freelist_data_t* cur_ptr_links = (freelist_data_t*)ptr;
-    if (next_ptr_links && next_ptr_links->next){
-      if (cur_ptr_links && cur_ptr_links->next){
-	// If cur ptr is already on freelist, remove next ptr
+    if (next_ptr_links->next){
+      if (cur_ptr_links->next){
+	// If cur ptr already has freelist freelist links, unlink next ptr
 	REMOVE_FROM_FREELIST(next_ptr_links);
       } else {
 	// If ptr has no free links, steal them from next ptr
 	*cur_ptr_links = *next_ptr_links;
-	LINK_UP_FREELIST(cur_ptr_links);
+	LINK_UP_FREELIST(cur_ptr_links);	
       }
+    }
+
+    // If next ptr was freelist_head, assume that role
+    if (FREE_HDR_FROM_LIST(next_ptr_links) == kheap->freelist_head){
+      kheap->freelist_head = FREE_HDR_FROM_LIST(cur_ptr_links);
     }
 
     // Indicate that we performed some coalesce
@@ -285,6 +295,33 @@ void kfree(void* ptr, heap_t* heap){
     ptr_links->next = heap->freelist_head;
     heap->freelist_head->freelist_data.prev = (free_hdr_t*)(GET_HDR(ptr));
     heap->freelist_head = (free_hdr_t*)(GET_HDR(ptr));
+  }
+
+}
+
+
+void TEST_kheap(){
+
+  // Test page fault handler on kalloc
+  uint32_t *ptr = (uint32_t *)kalloc(32, 0, kheap);
+  *ptr = 1;
+
+  if (*ptr){
+    printf("Ptr was allocated!\n");
+  }
+
+  uint32_t ptr_addr = (uint32_t)ptr;
+  kfree(ptr, kheap);
+  ptr = (uint32_t*)kalloc(32, 0, kheap);
+  if (ptr_addr == (uint32_t)ptr){
+    printf("Freed and re-allocated ptr!\n");
+  }
+
+  uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap);
+  uint32_t myInt = *ptr2;
+  myInt++;
+  if (myInt){
+    printf("Allocated a second block!");
   }
 
 }

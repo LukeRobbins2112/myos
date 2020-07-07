@@ -64,6 +64,8 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags);
 void* kalloc(uint32_t size, uint16_t align, heap_t* heap);
 void kfree(void* ptr, heap_t* heap);
 
+void TEST_kheap();
+
 // --------------------------------------------------------------
 // Helper Macros
 // --------------------------------------------------------------
