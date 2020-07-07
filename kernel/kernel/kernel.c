@@ -32,7 +32,5 @@ void kernel_main(void) {
   TEST_kheap();
 
   // Test itoa
-  char buf[32];
-  char * res = itoa(1234, buf, 10);
-  printf("Res = %s\n", res);
+  printf("Res = %d\n", 1234);
 }

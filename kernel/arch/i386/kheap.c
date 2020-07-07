@@ -317,7 +317,7 @@ void TEST_kheap(){
   uint32_t myInt = *ptr2;
   myInt++;
   if (myInt){
-    printf("Allocated a second block!");
+    printf("Allocated a second block!\n");
   }
 
 }
