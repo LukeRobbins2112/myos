@@ -87,6 +87,12 @@ void MARK_FREE(void* ptr){
   hdr->size &= (~0x1);
 }
 
+void ZERO_FREELIST_LINKS(void* ptr){
+  freelist_data_t* free_links = (freelist_data_t*)ptr;
+  free_links->next = 0x0;
+  free_links->prev = 0x0;
+}
+
 free_hdr_t* FREE_HDR_FROM_LIST(freelist_data_t* free_links){
   return (free_hdr_t*)((uint32_t)free_links - sizeof(header_t));
 }
@@ -176,6 +182,9 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
   // Setup the current block
   SET_HDR_FTR(ptr, size, USED_FLAG);
 
+  // breakpoint();
+
+  //breakpoint();
   // Split the block if there is enough room (16+ bytes usable space)
   // Otherwise, remove block from the free list
   if (block_remainder > TOTAL_BLK_SIZE(16)) {
@@ -194,6 +203,7 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
     *new_links = freelist_links;
     LINK_UP_FREELIST(new_links);
 
+    //breakpoint();
     if (free_itr == heap->freelist_head){
       heap->freelist_head = FREE_HDR_FROM_LIST(new_links);
     }
@@ -281,6 +291,9 @@ void kfree(void* ptr, heap_t* heap){
   // Mark the individual block as free
   MARK_FREE(ptr);
 
+  // Clear out garbage data where the freelist links will go
+  ZERO_FREELIST_LINKS(ptr);
+
   uint8_t performed_coalesce = coalesce(ptr);
 
   // If we didn't coalesce the block, we need to manually add to freelist
@@ -295,6 +308,9 @@ void kfree(void* ptr, heap_t* heap){
 
 }
 
+void print_heap_change(char* op, uint32_t* ptr, free_hdr_t* freelist_head){
+  printf("%s, addr = %x -- freelist_head = %x\n", op, (uint32_t)ptr, (uint32_t)freelist_head);
+}
 
 void TEST_kheap(){
 
@@ -303,21 +319,26 @@ void TEST_kheap(){
   *ptr = 1;
 
   if (*ptr){
-    printf("Ptr was allocated!\n");
+    print_heap_change("kalloc", ptr, kheap->freelist_head);
   }
 
   uint32_t ptr_addr = (uint32_t)ptr;
   kfree(ptr, kheap);
+  print_heap_change("kfree", ptr, kheap->freelist_head);
+
+  //breakpoint();
+
   ptr = (uint32_t*)kalloc(32, 0, kheap);
   if (ptr_addr == (uint32_t)ptr){
-    printf("Freed and re-allocated ptr!\n");
+    print_heap_change("kalloc", ptr, kheap->freelist_head);
   }
+  *ptr = 1234;
 
+  //breakpoint();
   uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap);
-  uint32_t myInt = *ptr2;
-  myInt++;
-  if (myInt){
-    printf("Allocated a second block!\n");
+  //breakpoint();
+  if (*ptr2 != 1234){
+    print_heap_change("kalloc", ptr2, kheap->freelist_head);
   }
 
 }

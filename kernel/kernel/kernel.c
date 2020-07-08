@@ -26,11 +26,7 @@ void kernel_main(void) {
   // Setup screen/graphics, print
   terminal_initialize();
   printf("Hello, kernel World!\n");
-  printf("Initialized descriptor tables\n");
 
   // Run tests
   TEST_kheap();
-
-  // Test itoa
-  printf("Res = %d\n", 1234);
 }
