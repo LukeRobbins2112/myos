@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <common/inline_assembly.h>
  
 static bool print(const char* data, size_t length) {
 	const unsigned char* bytes = (const unsigned char*) data;
@@ -70,6 +71,22 @@ int printf(const char* restrict format, ...) {
 		  size_t len = strlen(numString);
 		  if (maxrem < len){
 		    // TODO set errno to EOVERFLOW
+		    return -1;
+		  }
+		  if (!print(numString, len)){
+		    return -1;
+		  }
+		} else if (*format == 'x') {
+		  format++;
+		  uint32_t num = va_arg(parameters, uint32_t);
+		  char buf[32];
+		  char* numString = utoa(num, buf, 16);
+		  size_t len = strlen(numString);
+		  if (maxrem+2 < len){
+		    // TODO set errno to EOVERFLOW
+		    return -1;
+		  }
+		  if (!print("0x", 2)) {
 		    return -1;
 		  }
 		  if (!print(numString, len)){
