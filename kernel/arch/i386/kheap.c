@@ -326,7 +326,42 @@ void kfree(void* ptr, heap_t* heap){
 
 }
 
-void print_heap_change(char* op, uint32_t* ptr, free_hdr_t* freelist_head){
+
+// --------------------------------------
+// TESTING
+// --------------------------------------
+
+static void print_block(header_t* hdr){
+
+  // Get necessary data
+  void* ptr = GET_DATA(hdr);
+  footer_t* ftr = GET_FTR(ptr);
+  const char* block_free = IS_FREE(hdr) ? "free" : "used";
+  uint32_t block_size = GET_SIZE(ptr);
+  freelist_data_t* free_links = IS_FREE(hdr) ? (freelist_data_t*)ptr : 0x0;
+
+  // "pretty" print
+  printf("Hdr addr: %x -- Ptr addr: %x -- Ftr addr: %x\n", (uint32_t)hdr, (uint32_t)ptr, (uint32_t)ftr);
+  printf("Block is %s -- Contains %d bytes\n", block_free, block_size);
+  if (free_links){
+    uint32_t next = (uint32_t)free_links->next;
+    uint32_t prev = (uint32_t)free_links->prev;
+    printf("freelist->next = %x -- freellist->prev = %x\n", next, prev);
+  }
+
+}
+
+static void print_freelist(){
+
+  printf("---- Printing Freelist ----\n");
+  free_hdr_t* free_itr = kheap->freelist_head;
+  while (free_itr){
+    print_block(&free_itr->header);
+    free_itr = free_itr->freelist_data.next;
+  }
+}
+
+static void print_heap_change(char* op, uint32_t* ptr, free_hdr_t* freelist_head){
   printf("%s, addr = %x -- freelist_head = %x\n", op, (uint32_t)ptr, (uint32_t)freelist_head);
 }
 
@@ -359,18 +394,22 @@ void TEST_kheap(){
     print_heap_change("kalloc", ptr2, kheap->freelist_head);
   }
 
-  for (int i = 0; i < 5; i++){
+  for (int i = 1; i < 4; i++){
     uint32_t* loopPtr = (uint32_t*)kalloc(i * 16, 0, kheap);
     *loopPtr = i;
     printf("Loop %d, val = %d:", i, *loopPtr);
     print_heap_change("kalloc", loopPtr, kheap->freelist_head);
   }
 
+
   // Test freeing block in the middle
   printf("--- Free then Re-allocate ---\n");
   kfree(ptr, kheap);
   print_heap_change("kfree", ptr, kheap->freelist_head);
 
+  // Print freelist
+  print_freelist();
+  
   // Re-allocate block in the middle
   ptr = (uint32_t*)kalloc(32, 0, kheap);
   if (ptr_addr == (uint32_t)ptr){
