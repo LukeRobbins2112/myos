@@ -4,6 +4,7 @@
 #include <kernel/boot_heap.h>
 #include <common/inline_assembly.h>
 #include <stdio.h>
+#include <string.h>
 
 heap_t* kheap = (heap_t*)0x0;
 
@@ -365,6 +366,33 @@ static void print_heap_change(char* op, uint32_t* ptr, free_hdr_t* freelist_head
   printf("%s, addr = %x -- freelist_head = %x\n", op, (uint32_t)ptr, (uint32_t)freelist_head);
 }
 
+
+// **************************************************
+// **** DANGER: THIS WILL RESET THE ENTIRE HEAP ****
+// **** USE ONLY FOR TESTING AND DEBUGGING ****
+// **************************************************
+static void clear_heap(uint32_t safety) {
+
+  // Just make sure I don't accidentally call this
+  if (safety != 8675309){
+    return;
+  }
+  
+  // Zero out the entire heap section
+  void* heap = (void*)kheap->heap_start;
+  uint32_t size = kheap->heap_end - kheap->heap_start;
+  uint32_t val = 0x0;
+  memset(heap, val, size);
+
+  // Set up the heap for use
+  uint32_t avail_space = DATA_SIZE(size);
+  SET_HDR_FTR(GET_DATA((header_t*)kheap->heap_start), avail_space, FREE_FLAG);
+  kheap->freelist_head = (free_hdr_t*)kheap->heap_start;
+  kheap->freelist_head->freelist_data.next = 0x0;
+  kheap->freelist_head->freelist_data.prev = 0x0;
+
+}
+
 void TEST_kheap(){
 
   // Test page fault handler on kalloc
@@ -416,6 +444,10 @@ void TEST_kheap(){
     print_heap_change("kalloc", ptr, kheap->freelist_head);
   }
   *ptr = 4321;
-  
+
+
+  // Clear heap
+  clear_heap(8675309);
+  print_freelist();
 
 }
