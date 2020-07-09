@@ -115,6 +115,11 @@ void REMOVE_FROM_FREELIST(freelist_data_t* free_links){
   if (free_links->prev){
     free_links->prev->freelist_data.next = free_links->next;
   }
+
+  // If this was the kheap->freelist_headr, update that to next
+  if ((FREE_HDR_FROM_LIST(free_links) == kheap->freelist_head)){
+    kheap->freelist_head = free_links->next;
+  }
 }
 
 // -----------------------
@@ -220,7 +225,8 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
       heap->freelist_head = FREE_HDR_FROM_LIST(new_links);
     }
   } else {
-    REMOVE_FROM_FREELIST(&freelist_links);
+    breakpoint();
+    REMOVE_FROM_FREELIST(&(free_itr->freelist_data));
   }
   
   return ptr;
@@ -354,10 +360,23 @@ void TEST_kheap(){
   }
 
   for (int i = 0; i < 5; i++){
-    uint32_t* loopPtr = (uint32_t)kalloc(i * 16, 0, kheap);
+    uint32_t* loopPtr = (uint32_t*)kalloc(i * 16, 0, kheap);
     *loopPtr = i;
     printf("Loop %d, val = %d:", i, *loopPtr);
     print_heap_change("kalloc", loopPtr, kheap->freelist_head);
   }
+
+  // Test freeing block in the middle
+  printf("--- Free then Re-allocate ---\n");
+  kfree(ptr, kheap);
+  print_heap_change("kfree", ptr, kheap->freelist_head);
+
+  // Re-allocate block in the middle
+  ptr = (uint32_t*)kalloc(32, 0, kheap);
+  if (ptr_addr == (uint32_t)ptr){
+    print_heap_change("kalloc", ptr, kheap->freelist_head);
+  }
+  *ptr = 4321;
+  
 
 }
