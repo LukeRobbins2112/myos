@@ -5,6 +5,7 @@
 #include <common/inline_assembly.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 heap_t* kheap = (heap_t*)0x0;
 
@@ -226,7 +227,7 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
       heap->freelist_head = FREE_HDR_FROM_LIST(new_links);
     }
   } else {
-    breakpoint();
+    // breakpoint();
     REMOVE_FROM_FREELIST(&(free_itr->freelist_data));
   }
   
@@ -393,61 +394,104 @@ static void clear_heap(uint32_t safety) {
 
 }
 
+void TEST_alloc(){
+
+  uint32_t failures = 0;
+
+  // Make sure we have a fresh heap
+  clear_heap(8675309);
+
+  // First available addr to allocate
+  uint32_t base_addr = (uint32_t)GET_DATA(&kheap->freelist_head->header);
+
+  // Do a single allocation
+  void* ptr = kalloc(32, 0, kheap);
+  uint32_t ptr_addr = (uint32_t)ptr;
+  uint32_t expected_addr = base_addr;
+
+  if (ptr_addr != expected_addr){
+    printf("FAILED: expected was %x, actual was %x", expected_addr, ptr_addr);
+    failures++;
+    return;
+  }
+  
+  // Do several allocations
+  clear_heap(8675309);
+  for (int i = 0; i < 5; i++){
+    void* itr_ptr = kalloc(32, 0, kheap);
+    ptr_addr = (uint32_t)itr_ptr;
+    expected_addr = base_addr + TOTAL_BLK_SIZE(32)*i;
+
+    if (ptr_addr != expected_addr){
+      printf("FAILED %d: expected was %x, actual was %x", i, expected_addr, ptr_addr);
+    }
+  }
+
+  if (0 == failures){
+    printf("TEST_alloc() passed all tests\n");
+  }
+
+  // Leave the heap clean when we're done
+  clear_heap(8675309);
+}
+
 void TEST_kheap(){
 
-  // Test page fault handler on kalloc
-  uint32_t *ptr = (uint32_t *)kalloc(32, 0, kheap);
-  *ptr = 1;
+  TEST_alloc();
 
-  if (*ptr){
-    print_heap_change("kalloc", ptr, kheap->freelist_head);
-  }
+  /* // Test page fault handler on kalloc */
+  /* uint32_t *ptr = (uint32_t *)kalloc(32, 0, kheap); */
+  /* *ptr = 1; */
 
-  uint32_t ptr_addr = (uint32_t)ptr;
-  kfree(ptr, kheap);
-  print_heap_change("kfree", ptr, kheap->freelist_head);
+  /* if (*ptr){ */
+  /*   print_heap_change("kalloc", ptr, kheap->freelist_head); */
+  /* } */
 
-  //breakpoint();
+  /* uint32_t ptr_addr = (uint32_t)ptr; */
+  /* kfree(ptr, kheap); */
+  /* print_heap_change("kfree", ptr, kheap->freelist_head); */
 
-  ptr = (uint32_t*)kalloc(32, 0, kheap);
-  if (ptr_addr == (uint32_t)ptr){
-    print_heap_change("kalloc", ptr, kheap->freelist_head);
-  }
-  *ptr = 1234;
+  /* //breakpoint(); */
 
-  //breakpoint();
-  uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap);
-  //breakpoint();
-  if (*ptr2 != 1234){
-    print_heap_change("kalloc", ptr2, kheap->freelist_head);
-  }
+  /* ptr = (uint32_t*)kalloc(32, 0, kheap); */
+  /* if (ptr_addr == (uint32_t)ptr){ */
+  /*   print_heap_change("kalloc", ptr, kheap->freelist_head); */
+  /* } */
+  /* *ptr = 1234; */
 
-  for (int i = 1; i < 4; i++){
-    uint32_t* loopPtr = (uint32_t*)kalloc(i * 16, 0, kheap);
-    *loopPtr = i;
-    printf("Loop %d, val = %d:", i, *loopPtr);
-    print_heap_change("kalloc", loopPtr, kheap->freelist_head);
-  }
+  /* //breakpoint(); */
+  /* uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap); */
+  /* //breakpoint(); */
+  /* if (*ptr2 != 1234){ */
+  /*   print_heap_change("kalloc", ptr2, kheap->freelist_head); */
+  /* } */
+
+  /* for (int i = 1; i < 4; i++){ */
+  /*   uint32_t* loopPtr = (uint32_t*)kalloc(i * 16, 0, kheap); */
+  /*   *loopPtr = i; */
+  /*   printf("Loop %d, val = %d:", i, *loopPtr); */
+  /*   print_heap_change("kalloc", loopPtr, kheap->freelist_head); */
+  /* } */
 
 
-  // Test freeing block in the middle
-  printf("--- Free then Re-allocate ---\n");
-  kfree(ptr, kheap);
-  print_heap_change("kfree", ptr, kheap->freelist_head);
+  /* // Test freeing block in the middle */
+  /* printf("--- Free then Re-allocate ---\n"); */
+  /* kfree(ptr, kheap); */
+  /* print_heap_change("kfree", ptr, kheap->freelist_head); */
 
-  // Print freelist
-  print_freelist();
+  /* // Print freelist */
+  /* print_freelist(); */
   
-  // Re-allocate block in the middle
-  ptr = (uint32_t*)kalloc(32, 0, kheap);
-  if (ptr_addr == (uint32_t)ptr){
-    print_heap_change("kalloc", ptr, kheap->freelist_head);
-  }
-  *ptr = 4321;
+  /* // Re-allocate block in the middle */
+  /* ptr = (uint32_t*)kalloc(32, 0, kheap); */
+  /* if (ptr_addr == (uint32_t)ptr){ */
+  /*   print_heap_change("kalloc", ptr, kheap->freelist_head); */
+  /* } */
+  /* *ptr = 4321; */
 
 
-  // Clear heap
-  clear_heap(8675309);
-  print_freelist();
+  /* // Clear heap */
+  /* clear_heap(8675309); */
+  /* print_freelist(); */
 
 }
