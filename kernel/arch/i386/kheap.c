@@ -40,6 +40,7 @@ void* NEXT_BLOCK(void* ptr){
   void* next_block = (void*)((uint32_t)ptr + GET_SIZE(ptr) + FTR_SIZE + HDR_SIZE);
 
   if ((uint32_t)next_block > kheap->heap_end){
+    printf("ERROR: NEXT_BLOCK is beyond heap end\n");
     return 0x0;
   }
 
@@ -51,6 +52,7 @@ void* PREV_BLOCK(void* ptr){
 
   // If we try to go back past the beginning of the heap
   if ((uint32_t)prev_block_footer < kheap->heap_start){
+    printf("ERROR: PREV_BLOCK is before heap start\n");
     return 0x0;
   }
   
@@ -160,6 +162,13 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags){
 
 void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
+  if (0 == size){
+    printf("ERROR: Cannot call kalloc with 0 size\n");
+  }
+
+  // Dynamic allocation should be at least 8-bytes
+  size = (size > 8) ? size : 8;
+
   free_hdr_t* free_itr = heap->freelist_head;
   while(free_itr && free_itr->header.size < size){
     free_itr = free_itr->freelist_data.next;
@@ -167,6 +176,7 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
   // If we reach the end of the list w/o finding a block
   if (!free_itr){
+    printf("ERROR: Could not find free block\n");
     return (void*)0x0;
   }
 
@@ -201,6 +211,8 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
     // Set up links
     freelist_data_t* new_links = (freelist_data_t*)next_block;
     *new_links = freelist_links;
+    new_links->next = 0x0;  // Clear out any data from used block
+    new_links->prev = 0x0;  // Clear out any data from used block
     LINK_UP_FREELIST(new_links);
 
     //breakpoint();
@@ -339,6 +351,13 @@ void TEST_kheap(){
   //breakpoint();
   if (*ptr2 != 1234){
     print_heap_change("kalloc", ptr2, kheap->freelist_head);
+  }
+
+  for (int i = 0; i < 5; i++){
+    uint32_t* loopPtr = (uint32_t)kalloc(i * 16, 0, kheap);
+    *loopPtr = i;
+    printf("Loop %d, val = %d:", i, *loopPtr);
+    print_heap_change("kalloc", loopPtr, kheap->freelist_head);
   }
 
 }
