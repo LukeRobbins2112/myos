@@ -136,7 +136,6 @@ irq15:
 	iret
 
 load_idt:
-	xchgw %bx, %bx
 	movl 4(%esp), %eax
 	lidt (%eax)
 	sti

@@ -44,8 +44,6 @@ k_workspace_end: .long 0x0
 .global _start
 .type _start, @function
 _start:
-	# immediate breakpoint
-	xchgw %bx, %bx
 	# physical addr of boot_page_table0
 	movl $(boot_page_table0 - 0xC0000000), %edi
 
@@ -73,7 +71,6 @@ _start:
 3:
 	# get the next 4K-aligned address after the kernel end
 	# set the current kernel workspace ptr to this addr
-	xchgw %bx, %bx
 	movl $(_kernel_end), %ecx
 	addl $0xFFF, %ecx
 	andl $0xFFFFF000, %ecx
@@ -101,7 +98,6 @@ identity_map:
 
 recursive_map:
 	# Set the last entry in the page directory to itself
-	xchgw %bx, %bx
 	movl $(boot_page_directory - 0xC0000000 + 0x003), (boot_page_directory - 0xC0000000 + (1023 * 4))
 
 enable_paging:
