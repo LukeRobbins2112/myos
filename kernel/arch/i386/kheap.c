@@ -3,6 +3,7 @@
 #include <kernel/vmm.h>
 #include <kernel/boot_heap.h>
 #include <common/inline_assembly.h>
+#include <common/testing.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -409,49 +410,61 @@ void TEST_alloc(){
   uint32_t ptr_addr = (uint32_t)ptr;
   uint32_t expected_addr = base_addr;
 
-  if (ptr_addr != expected_addr){
-    printf("FAILED: expected was %x, actual was %x", expected_addr, ptr_addr);
-    failures++;
-    return;
-  }
+  ASSERT_EQ(ptr_addr, expected_addr);
   
   // Do several allocations
   clear_heap(8675309);
+  
   for (int i = 0; i < 5; i++){
     void* itr_ptr = kalloc(32, 0, kheap);
     ptr_addr = (uint32_t)itr_ptr;
     expected_addr = base_addr + TOTAL_BLK_SIZE(32)*i;
 
-    if (ptr_addr != expected_addr){
-      printf("FAILED %d: expected was %x, actual was %x", i, expected_addr, ptr_addr);
-    }
+    ASSERT_EQ(ptr_addr, expected_addr);
   }
+  
+  // End test and leave the heap clean when we're done
+  END_TEST(TEST_alloc);
+  clear_heap(8675309);
+}
 
-  if (0 == failures){
-    printf("TEST_alloc() passed all tests\n");
-  }
+void TEST_free(){
+  // Make sure we have a fresh heap
+  clear_heap(8675309);
 
-  // Leave the heap clean when we're done
+  // Save some data to compare to post-allocation
+  uint32_t freelist_head = (uint32_t)kheap->freelist_head;
+  uint32_t orig_size = kheap->freelist_head->header.size;
+
+  // First available addr to allocate
+  uint32_t base_addr = (uint32_t)GET_DATA(&kheap->freelist_head->header);
+
+  // Do a single allocation, to be freed
+  void* ptr = kalloc(32, 0, kheap);
+  uint32_t ptr_addr = (uint32_t)ptr;
+  uint32_t expected_addr = base_addr;
+
+  // Make sure allocation worked
+  ASSERT_EQ(ptr_addr, expected_addr);
+
+  // Now free that pointer, make sure freelist was properly fixed up
+  kfree(ptr, kheap);
+
+  ASSERT_EQ((uint32_t)kheap->freelist_head, freelist_head);
+  ASSERT_EQ(kheap->freelist_head->header.size, orig_size);
+  ASSERT_TRUE(IS_FREE(&(kheap->freelist_head->header)));
+
+  // End test and leave the heap clean when we're done
+  END_TEST(TEST_free);  
   clear_heap(8675309);
 }
 
 void TEST_kheap(){
 
   TEST_alloc();
+  TEST_free();
 
-  /* // Test page fault handler on kalloc */
-  /* uint32_t *ptr = (uint32_t *)kalloc(32, 0, kheap); */
-  /* *ptr = 1; */
-
-  /* if (*ptr){ */
-  /*   print_heap_change("kalloc", ptr, kheap->freelist_head); */
-  /* } */
-
-  /* uint32_t ptr_addr = (uint32_t)ptr; */
-  /* kfree(ptr, kheap); */
-  /* print_heap_change("kfree", ptr, kheap->freelist_head); */
-
-  /* //breakpoint(); */
+  ASSERT_TRUE(1 == 0);
 
   /* ptr = (uint32_t*)kalloc(32, 0, kheap); */
   /* if (ptr_addr == (uint32_t)ptr){ */
