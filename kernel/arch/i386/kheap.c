@@ -397,8 +397,6 @@ static void clear_heap(uint32_t safety) {
 
 void TEST_alloc(){
 
-  uint32_t failures = 0;
-
   // Make sure we have a fresh heap
   clear_heap(8675309);
 
@@ -443,9 +441,15 @@ void TEST_free(){
   void* ptr = kalloc(32, 0, kheap);
   uint32_t ptr_addr = (uint32_t)ptr;
   uint32_t expected_addr = base_addr;
+  uint32_t ptr_size = GET_SIZE(ptr);
 
-  // Make sure allocation worked
+  // Make sure the allocation worked
   ASSERT_EQ(ptr_addr, expected_addr);
+  ASSERT_EQ(ptr_size, 32);
+
+  // Freelist head should be shifted to past the allocated block
+  uint32_t new_freelist_head = freelist_head + TOTAL_BLK_SIZE(32);
+  ASSERT_EQ((uint32_t)kheap->freelist_head, new_freelist_head);
 
   // Now free that pointer, make sure freelist was properly fixed up
   kfree(ptr, kheap);
@@ -453,6 +457,17 @@ void TEST_free(){
   ASSERT_EQ((uint32_t)kheap->freelist_head, freelist_head);
   ASSERT_EQ(kheap->freelist_head->header.size, orig_size);
   ASSERT_TRUE(IS_FREE(&(kheap->freelist_head->header)));
+
+  // Now allocate a new block, should be identical to the first
+  void* ptr2 = kalloc(32, 0, kheap);
+  uint32_t ptr_addr2 = (uint32_t)ptr2;
+  uint32_t expected_addr2 = base_addr;
+  uint32_t ptr_size2 = GET_SIZE(ptr2);
+
+  ASSERT_EQ(ptr_addr2, expected_addr2);
+  ASSERT_EQ(ptr_addr2, ptr_addr);
+  ASSERT_EQ(ptr_size2, 32);
+  ASSERT_EQ(ptr_size2, ptr_size);
 
   // End test and leave the heap clean when we're done
   END_TEST(TEST_free);  
@@ -464,15 +479,7 @@ void TEST_kheap(){
   TEST_alloc();
   TEST_free();
 
-  ASSERT_TRUE(1 == 0);
 
-  /* ptr = (uint32_t*)kalloc(32, 0, kheap); */
-  /* if (ptr_addr == (uint32_t)ptr){ */
-  /*   print_heap_change("kalloc", ptr, kheap->freelist_head); */
-  /* } */
-  /* *ptr = 1234; */
-
-  /* //breakpoint(); */
   /* uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap); */
   /* //breakpoint(); */
   /* if (*ptr2 != 1234){ */
