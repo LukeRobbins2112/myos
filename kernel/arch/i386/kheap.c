@@ -474,10 +474,87 @@ void TEST_free(){
   clear_heap(8675309);
 }
 
+void TEST_freelist(){
+  // Make sure we have a fresh heap
+  clear_heap(8675309);
+
+  // Shared comparison data
+  uint32_t initial_heap_size = kheap->heap_end - kheap->heap_start;
+
+  // (---0---) Check initial state of the freelist
+  header_t* freelist_head0 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links0 = &(kheap->freelist_head->freelist_data);
+  uint32_t header_size_field0 = freelist_head0->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head0, kheap->heap_start);
+  ASSERT_EQ(DATA_SIZE(initial_heap_size), header_size_field0);
+  ASSERT_EQ(free_links0->next, 0x0);
+  ASSERT_EQ(free_links0->prev, 0x0);
+
+  // (---1---)Allocate a block, check the new freelist head
+  void* ptr1 = kalloc(32, 0, kheap);
+  header_t* freelist_head1 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links1 = &(kheap->freelist_head->freelist_data);
+  uint32_t new_size1 = freelist_head1->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head1, ((uint32_t)freelist_head0 + TOTAL_BLK_SIZE(32)));
+  ASSERT_EQ((DATA_SIZE(initial_heap_size) - TOTAL_BLK_SIZE(32)), new_size1);
+  ASSERT_EQ(free_links1->next, 0x0);
+  ASSERT_EQ(free_links1->prev, 0x0);
+
+  // (---2---)Allocate a second block, check the new freelist head
+  void* ptr2 = kalloc(32, 0, kheap);
+  header_t* freelist_head2 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links2 = &(kheap->freelist_head->freelist_data);
+  uint32_t new_size2 = freelist_head2->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head2, ((uint32_t)freelist_head1 + TOTAL_BLK_SIZE(32)));
+  ASSERT_EQ((DATA_SIZE(initial_heap_size) - TOTAL_BLK_SIZE(32)*2), new_size2);
+  ASSERT_EQ(free_links2->next, 0x0);
+  ASSERT_EQ(free_links2->prev, 0x0);
+
+  // (---3---) Free second block, coalesce left. Should return to state after first alloc
+  kfree(ptr2, kheap);
+  header_t* freelist_head3 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links3 = &(kheap->freelist_head->freelist_data);
+  uint32_t new_size3 = freelist_head3->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head3, (uint32_t)freelist_head1);
+  ASSERT_EQ(new_size3, new_size1);
+  ASSERT_EQ(free_links3->next, 0x0);
+  ASSERT_EQ(free_links3->prev, 0x0);
+
+  // (---4---) Re-allocate a second block, make sure freelist is same as (---2---)
+  void* ptr4 = kalloc(32, 0, kheap);
+  header_t* freelist_head4 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links4 = &(kheap->freelist_head->freelist_data);
+  uint32_t new_size4 = freelist_head4->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head4, (uint32_t)freelist_head2);
+  ASSERT_EQ(new_size4, new_size2);
+  ASSERT_EQ(free_links4->next, 0x0);
+  ASSERT_EQ(free_links4->prev, 0x0);
+
+  // (---5---) Free first block, new entry on freelist (and new freelist head)
+  header_t* ptr_hdr = GET_HDR(ptr1);
+  header_t hdr_copy = *ptr_hdr;  // Save data before freeing
+  free_hdr_t* orig_free_head = kheap->freelist_head;
+  kfree(ptr1, kheap);
+
+  header_t* freelist_head5 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links5 = &(kheap->freelist_head->freelist_data);
+  uint32_t new_size5 = freelist_head5->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head5, kheap->heap_start); // Used block was at start of heap
+  ASSERT_EQ((uint32_t)freelist_head5, (uint32_t)ptr_hdr);
+  ASSERT_EQ(new_size5, (hdr_copy.size & (~0x1)));
+  ASSERT_EQ((uint32_t)free_links5->next, (uint32_t)orig_free_head);
+  ASSERT_EQ(free_links5->prev, 0x0);
+
+  // End test and leave the heap clean when we're done
+  END_TEST(TEST_freelist);  
+  clear_heap(8675309);
+}
+
 void TEST_kheap(){
 
   TEST_alloc();
   TEST_free();
+  TEST_freelist();
 
 
   /* uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap); */
