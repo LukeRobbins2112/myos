@@ -330,9 +330,14 @@ void kfree(void* ptr, heap_t* heap){
 }
 
 
-// --------------------------------------
+
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // TESTING
-// --------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 
 static void print_block(header_t* hdr){
 
@@ -354,14 +359,26 @@ static void print_block(header_t* hdr){
 
 }
 
-static void print_freelist(){
+static void print_freelist(heap_t* heap){
 
   printf("---- Printing Freelist ----\n");
-  free_hdr_t* free_itr = kheap->freelist_head;
+  free_hdr_t* free_itr = heap->freelist_head;
   while (free_itr){
     print_block(&free_itr->header);
     free_itr = free_itr->freelist_data.next;
   }
+}
+
+static uint32_t count_free_blocks(heap_t* heap){
+  uint32_t num_free_blocks = 0;
+  
+  free_hdr_t* free_itr = heap->freelist_head;
+  while (free_itr){
+    num_free_blocks++;
+    free_itr = free_itr->freelist_data.next;
+  }
+
+  return num_free_blocks;
 }
 
 static void print_heap_change(char* op, uint32_t* ptr, free_hdr_t* freelist_head){
@@ -545,6 +562,58 @@ void TEST_freelist(){
   ASSERT_EQ((uint32_t)free_links5->next, (uint32_t)orig_free_head);
   ASSERT_EQ(free_links5->prev, 0x0);
 
+  // Ensure next free block is the last (remainder of the heap)
+  free_hdr_t* next_free5 = free_links5->next;
+  header_t* next_freelist_head5 = &(next_free5->header);
+  ASSERT_EQ((uint32_t)next_freelist_head5, (uint32_t)freelist_head4);
+  ASSERT_EQ(next_freelist_head5->size, new_size4);
+  ASSERT_EQ(next_free5->freelist_data.next, 0x0);
+  ASSERT_EQ((uint32_t)next_free5->freelist_data.prev, (uint32_t)FREE_HDR_FROM_LIST(free_links5));
+
+  // ------------------------------------------
+  // CLEAR HEAP, CLEAN SLATE FOR UPCOMING TESTS
+  // ------------------------------------------
+  clear_heap(8675309);
+  // ------------------------------------------
+
+  // (---6---) Testing multiple free blocks
+  void* used_blocks[5];
+  header_t* used_hdrs[5]; // Save for tests
+  for (int i = 0; i < 5; i++){
+    used_blocks[i] = kalloc(32, 0, kheap);
+    used_hdrs[i] = GET_HDR(used_blocks[i]);
+  }
+
+  // Validate initial free block (heap remainder) assumptions
+  header_t* freelist_head6 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links6 = &(kheap->freelist_head->freelist_data);
+  ASSERT_EQ((uint32_t)freelist_head6, (kheap->heap_start + TOTAL_BLK_SIZE(32)*5));
+  ASSERT_EQ(freelist_head6->size, (DATA_SIZE(initial_heap_size) - TOTAL_BLK_SIZE(32)*5));
+  ASSERT_EQ(free_links6->next, 0x0);
+  ASSERT_EQ(free_links6->prev, 0x0);
+
+  // Now free 2 blocks, which don't coalesce
+  kfree(used_blocks[1], kheap);
+  kfree(used_blocks[3], kheap);
+
+  // Should have 3 free (used_blocks[1], used_blocks[3], heap remainder)
+  ASSERT_EQ(count_free_blocks(kheap), 3);
+
+  // We freed used_blocks[3] last, it should be the freelist head
+  ASSERT_EQ((uint32_t)kheap->freelist_head, (uint32_t)used_hdrs[3]);
+  ASSERT_EQ(kheap->freelist_head->header.size, 32);
+
+  // Next free block should be from used_blocks[1]
+  free_hdr_t* next_free = kheap->freelist_head->freelist_data.next;
+  ASSERT_EQ((uint32_t)next_free, (uint32_t)used_hdrs[1]);
+  ASSERT_EQ(next_free->header.size, 32);
+
+  // Last block should be the heap remainder
+  free_hdr_t* last_free = next_free->freelist_data.next;
+  ASSERT_EQ((uint32_t)last_free, (uint32_t)freelist_head6);
+  ASSERT_EQ(last_free->header.size, (DATA_SIZE(initial_heap_size) - TOTAL_BLK_SIZE(32)*5));
+  ASSERT_EQ(last_free->freelist_data.next, 0x0);
+
   // End test and leave the heap clean when we're done
   END_TEST(TEST_freelist);  
   clear_heap(8675309);
@@ -557,28 +626,6 @@ void TEST_kheap(){
   TEST_freelist();
 
 
-  /* uint32_t *ptr2 = (uint32_t *)kalloc(32, 0, kheap); */
-  /* //breakpoint(); */
-  /* if (*ptr2 != 1234){ */
-  /*   print_heap_change("kalloc", ptr2, kheap->freelist_head); */
-  /* } */
-
-  /* for (int i = 1; i < 4; i++){ */
-  /*   uint32_t* loopPtr = (uint32_t*)kalloc(i * 16, 0, kheap); */
-  /*   *loopPtr = i; */
-  /*   printf("Loop %d, val = %d:", i, *loopPtr); */
-  /*   print_heap_change("kalloc", loopPtr, kheap->freelist_head); */
-  /* } */
-
-
-  /* // Test freeing block in the middle */
-  /* printf("--- Free then Re-allocate ---\n"); */
-  /* kfree(ptr, kheap); */
-  /* print_heap_change("kfree", ptr, kheap->freelist_head); */
-
-  /* // Print freelist */
-  /* print_freelist(); */
-  
   /* // Re-allocate block in the middle */
   /* ptr = (uint32_t*)kalloc(32, 0, kheap); */
   /* if (ptr_addr == (uint32_t)ptr){ */
@@ -586,9 +633,7 @@ void TEST_kheap(){
   /* } */
   /* *ptr = 4321; */
 
-
-  /* // Clear heap */
-  /* clear_heap(8675309); */
-  /* print_freelist(); */
+  // Clear heap at the end, just in case
+  clear_heap(8675309);
 
 }
