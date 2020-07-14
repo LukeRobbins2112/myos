@@ -279,9 +279,9 @@ uint8_t coalesce(void* ptr){
     // Fix up freelist links
     freelist_data_t* next_ptr_links = (freelist_data_t*)next_ptr;
     freelist_data_t* cur_ptr_links = (freelist_data_t*)ptr;
-    if (next_ptr_links->next){
-      if (cur_ptr_links->next){
-	// If cur ptr already has freelist freelist links, unlink next ptr
+    if (next_ptr_links->prev || next_ptr_links->next){
+      if (cur_ptr_links->prev || cur_ptr_links->next){
+	// If cur ptr already has freelist links, unlink next ptr
 	REMOVE_FROM_FREELIST(next_ptr_links);
       } else {
 	// If ptr has no free links, steal them from next ptr
@@ -575,6 +575,7 @@ void TEST_freelist(){
   // ------------------------------------------
   clear_heap(8675309);
   // ------------------------------------------
+  // ------------------------------------------
 
   // (---6---) Testing multiple free blocks
   void* used_blocks[5];
@@ -614,6 +615,93 @@ void TEST_freelist(){
   ASSERT_EQ(last_free->header.size, (DATA_SIZE(initial_heap_size) - TOTAL_BLK_SIZE(32)*5));
   ASSERT_EQ(last_free->freelist_data.next, 0x0);
 
+
+  // (---7---) Use the first free block on the list, then the second
+  kalloc(32, 0, kheap);
+  header_t* freelist_head7 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links7 = &(kheap->freelist_head->freelist_data);
+  ASSERT_EQ((uint32_t)freelist_head7, (uint32_t)used_hdrs[1]);
+  ASSERT_EQ(free_links7->prev, 0x0);
+
+  // Should have 2 free (used_blocks[1], heap remainder)
+  ASSERT_EQ(count_free_blocks(kheap), 2);
+
+  // (---8---) Use the second block
+  header_t* last_hdr8 = &(free_links7->next->header);
+  kalloc(32, 0, kheap);
+  header_t* freelist_head8 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links8 = &(kheap->freelist_head->freelist_data);
+  ASSERT_EQ((uint32_t)freelist_head8, (uint32_t)last_hdr8);
+  ASSERT_EQ(free_links8->next, 0x0);
+  ASSERT_EQ(free_links8->prev, 0x0);
+
+  // Should have 1 free (heap remainder)
+  ASSERT_EQ(count_free_blocks(kheap), 1);
+
+  // End test and leave the heap clean when we're done
+  END_TEST(TEST_freelist);  
+  clear_heap(8675309);
+}
+
+void TEST_coalesce(){
+  // Make sure we have a fresh heap
+  clear_heap(8675309);
+
+
+  // Shared comparison data
+  uint32_t initial_heap_size = kheap->heap_end - kheap->heap_start;
+
+  // (---0---) Check initial state of the freelist
+  header_t* freelist_head0 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links0 = &(kheap->freelist_head->freelist_data);
+  uint32_t header_size_field0 = freelist_head0->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head0, kheap->heap_start);
+  ASSERT_EQ(DATA_SIZE(initial_heap_size), header_size_field0);
+  ASSERT_EQ(free_links0->next, 0x0);
+  ASSERT_EQ(free_links0->prev, 0x0);
+  ASSERT_EQ(count_free_blocks(kheap), 1);
+
+  // (--1--) Alloc a block then free it (coalesce with heap remainder)
+  void* ptr1 = kalloc(32, 0, kheap);
+  kfree(ptr1, kheap);
+
+  // Freeblock metrics should be the same as before
+  header_t* freelist_head1 = &(kheap->freelist_head->header);
+  uint32_t header_size_field1 = freelist_head1->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head1, kheap->heap_start);
+  ASSERT_EQ((uint32_t)freelist_head1, (uint32_t)freelist_head0);
+  ASSERT_EQ(DATA_SIZE(initial_heap_size), header_size_field1);
+  ASSERT_EQ(count_free_blocks(kheap), 1);
+
+  // (--2--) Alloc 2 blocks, free the first block - no coalesce
+  void* ptr2_1 = kalloc(32, 0, kheap);
+  void* ptr2_2 = kalloc(32, 0, kheap);
+  // Get heap remainder header before freeing ptr
+  header_t* heap_remainder = &(kheap->freelist_head->header);
+  kfree(ptr2_1, kheap);
+
+  ASSERT_EQ(count_free_blocks(kheap), 2);
+  header_t* freelist_head2 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links2 = &(kheap->freelist_head->freelist_data);
+  uint32_t header_size_field2 = freelist_head2->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head2, kheap->heap_start);
+  ASSERT_EQ(32, header_size_field2);
+  ASSERT_EQ(free_links2->prev, 0x0);
+  ASSERT_EQ((uint32_t)free_links2->next, (uint32_t)heap_remainder);
+
+  // (--3--) Free middle alloc'd block, coalesce left and right
+  breakpoint();
+  kfree(ptr2_2, kheap);
+
+  ASSERT_EQ(count_free_blocks(kheap), 1);
+  header_t* freelist_head3 = &(kheap->freelist_head->header);
+  uint32_t header_size_field3 = freelist_head3->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head3, kheap->heap_start);
+  ASSERT_EQ((uint32_t)freelist_head3, (uint32_t)freelist_head0);
+  ASSERT_EQ(DATA_SIZE(initial_heap_size), header_size_field3);
+  
+  
+  
   // End test and leave the heap clean when we're done
   END_TEST(TEST_freelist);  
   clear_heap(8675309);
@@ -624,6 +712,7 @@ void TEST_kheap(){
   TEST_alloc();
   TEST_free();
   TEST_freelist();
+  TEST_coalesce();
 
 
   /* // Re-allocate block in the middle */
