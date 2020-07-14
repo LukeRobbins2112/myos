@@ -690,7 +690,6 @@ void TEST_coalesce(){
   ASSERT_EQ((uint32_t)free_links2->next, (uint32_t)heap_remainder);
 
   // (--3--) Free middle alloc'd block, coalesce left and right
-  breakpoint();
   kfree(ptr2_2, kheap);
 
   ASSERT_EQ(count_free_blocks(kheap), 1);
@@ -713,14 +712,6 @@ void TEST_kheap(){
   TEST_free();
   TEST_freelist();
   TEST_coalesce();
-
-
-  /* // Re-allocate block in the middle */
-  /* ptr = (uint32_t*)kalloc(32, 0, kheap); */
-  /* if (ptr_addr == (uint32_t)ptr){ */
-  /*   print_heap_change("kalloc", ptr, kheap->freelist_head); */
-  /* } */
-  /* *ptr = 4321; */
 
   // Clear heap at the end, just in case
   clear_heap(8675309);
