@@ -15,6 +15,8 @@ page_fault:
 	pushl 32(%esp)
 	movl %cr2, %eax
 	pushl %eax
+
+	cld # clear DF before function call
 	call page_fault_handler
 
 	# reload CR3 with updated page directory

@@ -3,7 +3,7 @@
 #include "kernel/PIC.h"
 
 // IDT constants
-#define KERNEL_CODE_SEGMENT 0x8
+#define KERNEL_CODE_SEGMENT 0x8 // Offset in GDT
 #define INTERRUPT_GATE 0x8E
 
 // DESCRIPTOR TABLE

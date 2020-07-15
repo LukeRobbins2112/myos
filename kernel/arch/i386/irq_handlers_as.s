@@ -41,96 +41,112 @@
 	
 irq0:
 	pusha
+	cld
 	call irq0_handler
 	popa
 	iret
  
 irq1:
 	pusha
+	cld
 	call irq1_handler
 	popa
 	iret
  
 irq2:
 	pusha
+	cld
 	call irq2_handler
 	popa
 	iret
  
 irq3:
 	pusha
+	cld
 	call irq3_handler
 	popa
 	iret
  
 irq4:
 	pusha
+	cld
 	call irq4_handler
 	popa
 	iret
  
 irq5:
 	pusha
+	cld
 	call irq5_handler
 	popa
 	iret
  
 irq6:
 	pusha
+	cld
 	call irq6_handler
 	popa
 	iret
  
 irq7:
 	pusha
+	cld
 	call irq7_handler
 	popa
 	iret
  
 irq8:
 	pusha
+	cld
 	call irq8_handler
 	popa
 	iret
  
 irq9:
 	pusha
+	cld
 	call irq9_handler
 	popa
 	iret
  
 irq10:
 	pusha
+	cld
 	call irq10_handler
 	popa
 	iret
  
 irq11:
 	pusha
+	cld
 	call irq11_handler
 	popa
 	iret
  
 irq12:
 	pusha
+	cld
 	call irq12_handler
 	popa
 	iret
  
 irq13:
 	pusha
+	cld
 	call irq13_handler
 	popa
 	iret
  
 irq14:
 	pusha
+	cld
 	call irq14_handler
 	popa	
 	iret
  
 irq15:
 	pusha
+	cld
 	call irq15_handler
 	popa	
 	iret
