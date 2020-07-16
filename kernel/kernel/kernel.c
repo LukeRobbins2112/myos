@@ -8,6 +8,7 @@
 #include <kernel/vmm.h>
 #include <kernel/boot_heap.h>
 #include <kernel/kheap.h>
+#include <kernel/ps2controller.h>
  
 void kernel_main(void) {
 
@@ -28,5 +29,7 @@ void kernel_main(void) {
   printf("Hello, kernel World!\n");
 
   // Run tests
-  TEST_kheap();
+  //TEST_kheap();
+
+  initialize_ps2_controller();
 }
