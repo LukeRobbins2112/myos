@@ -19,6 +19,7 @@
 #define DISABLE_PORT_2     0xA7
 #define ENABLE_PORT_2      0xA8
 #define TEST_PORT_2        0xA9
+#define WRITE_PORT_2       0xD4
 
 #define TEST_PORT_1        0xAB
 #define DISABLE_PORT_1     0xAD
@@ -26,8 +27,13 @@
 
 #define DIAG_DUMP          0xAC
 #define TEST_PS2_CONT      0xAA
+#define IDENTIFY_DEVICE    0xF2
+#define ENABLE_SCANNING    0xF4
+#define DISABLE_SCANNING   0xF5
+#define RESET_DEVICE       0xFF // written to data port
 
-
+#define PORT_1_DEVICE 0x1
+#define PORT_2_DEVICE 0x2
 
 // ----------------------
 // Helper macros
