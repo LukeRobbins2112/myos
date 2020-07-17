@@ -82,28 +82,25 @@ uint16_t identify_device(uint8_t device){
   write_data_port(IDENTIFY_DEVICE);
   WAIT_FOR_READ();
   ack = read_data_port();
-  if (ack == 0xFA){
-
-    WAIT_FOR_READ();
-    uint16_t deviceID = read_data_port();
-    printf("DeviceID: %x\n", deviceID);
-    if (deviceID == 0xAB){
-      WAIT_FOR_READ();
-      uint16_t deviceID1 = read_data_port();
-      printf("DeviceID1: %x\n", deviceID1);
-      deviceID = ((deviceID << 8) | (deviceID1));
-      printf("Dull DeviceID: %x\n", deviceID);
-    }
-
-    enable_scanning(device);
-
-    return deviceID;
-    
-  } else {
-    printf("Reply was %x\n", ack);
+  if (ack != 0xFA){
+    printf("Err: Identify device ack was %x\n", ack);
+    return 0xFF; // Failure
   }
   
-  return 0xFF; // Failure
+  WAIT_FOR_READ();
+  uint16_t deviceID = read_data_port();
+
+  // If device ID is multiple bytes
+  if (deviceID == 0xAB){
+    WAIT_FOR_READ();
+    uint16_t deviceID1 = read_data_port();
+    deviceID = ((deviceID << 8) | (deviceID1));
+  }
+
+  enable_scanning(device);
+  
+  printf("DeviceID: %x\n", deviceID);
+  return deviceID;
 }
 
 void initialize_ps2_controller(){
@@ -121,7 +118,7 @@ void initialize_ps2_controller(){
   uint8_t dualChannel = (configByte & (0x1 << 5));
   
   printf("Original Controller Config byte: %d\n", configByte);
-  //printf("Dual Channel: %s\n", dualChannel ? "yes" : "no");
+  printf("Dual Channel: %s\n", dualChannel ? "yes" : "no");
 
   // Set configuration byte
   configByte &= ~(1 << 0);
@@ -138,7 +135,6 @@ void initialize_ps2_controller(){
   //printf("Controller self test result: %d\n", status);
   printf("Controller test %s\n", (status == 0x55) ? "Passed" : "Failed");
 
-  // @TODO:
   // 7: Determine if there are 2 channels
   write_command_register(ENABLE_PORT_2);
   write_command_register(READ_CONFIG_BYTE);
@@ -210,92 +206,6 @@ void initialize_ps2_controller(){
 
   identify_device(PORT_1_DEVICE);
   identify_device(PORT_2_DEVICE);
-
-  /* // 11: Identify port 1 device */
-  /* write_data_port(DISABLE_SCANNING); */
-  /* WAIT_FOR_READ(); */
-  /* uint8_t ack = read_data_port(); */
-  /* if (ack == 0xFA){ */
-  /*   //printf("Disable scan Acked\n"); */
-  /* } else { */
-  /*   printf("Disable scan reply: %x\n", ack); */
-  /* } */
-  /* write_data_port(IDENTIFY_DEVICE); */
-  /* WAIT_FOR_READ(); */
-  /* ack = read_data_port(); */
-  /* if (ack == 0xFA){ */
-
-  /*   WAIT_FOR_READ(); */
-  /*   uint16_t deviceID = read_data_port(); */
-  /*   printf("DeviceID: %x\n", deviceID); */
-  /*   if (deviceID == 0xAB){ */
-  /*     WAIT_FOR_READ(); */
-  /*     uint16_t deviceID1 = read_data_port(); */
-  /*     printf("deviceID1: %x\n", deviceID1); */
-  /*     deviceID = ((deviceID << 8) | (deviceID1)); */
-  /*     printf("full DeviceID: %x\n", deviceID); */
-  /*   } */
-    
-  /* } else { */
-  /*   printf("Reply was %x\n", ack); */
-  /* } */
-
-  /* // Do some dummy reads */
-  /* flush_output_buffer(); */
-  
-  /* // 12: Identify port 2 device */
-  /* write_command_register(WRITE_PORT_2); */
-  /* write_data_port(DISABLE_SCANNING); */
-  /* WAIT_FOR_READ(); */
-  /* ack = read_data_port(); */
-  /* if (ack == 0xFA){ */
-  /*   //printf("Disable scan Acked\n"); */
-  /* } else { */
-  /*   printf("Disable scan reply: %x\n", ack); */
-  /* } */
-
-  /* write_command_register(WRITE_PORT_2); */
-  /* write_data_port(IDENTIFY_DEVICE); */
-  /* WAIT_FOR_READ(); */
-  /* ack = read_data_port(); */
-  /* if (ack == 0xFA){ */
-  /*   // printf("Identify Acked\n"); */
-
-  /*   WAIT_FOR_READ(); */
-  /*   uint16_t deviceID = read_data_port(); */
-  /*   printf("DeviceID: %x\n", deviceID); */
-  /*   if (deviceID == 0xAB){ */
-  /*     WAIT_FOR_READ(); */
-  /*     uint16_t deviceID1 = read_data_port(); */
-  /*     printf("deviceID1: %x\n", deviceID1); */
-  /*     deviceID = ((deviceID << 8) | (deviceID1)); */
-  /*     printf("full DeviceID: %x\n", deviceID); */
-  /*   } */
-    
-  /* } else { */
-  /*   printf("Reply was %x\n", ack); */
-  /* } */
-
-
-  /* // Re-enable scanning */
-  /* cmd_port_1(ENABLE_SCANNING); */
-  /* WAIT_FOR_READ(); */
-  /* uint8_t ack = read_data_port(); */
-  /* if (ack == 0xFA){ */
-  /*   printf("Enable scan Acked\n"); */
-  /* } else { */
-  /*   printf("Enable scan reply: %x\n", ack); */
-  /* } */
-  
-  /* cmd_port_2(ENABLE_SCANNING); */
-  /* WAIT_FOR_READ(); */
-  /* ack = read_data_port(); */
-  /* if (ack == 0xFA){ */
-  /*   printf("Enable scan Acked\n"); */
-  /* } else { */
-  /*   printf("Enable scan reply: %x\n", ack); */
-  /* } */
-
 
 }
     
