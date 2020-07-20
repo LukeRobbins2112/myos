@@ -32,4 +32,7 @@ void kernel_main(void) {
   //TEST_kheap();
 
   initialize_ps2_controller();
+  while(1){
+    // infinite loop 
+  }
 }

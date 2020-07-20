@@ -33,8 +33,8 @@ void remap_PIC(uint8_t master_offset, uint8_t slave_offset){
   io_wait();
 
   // Restore masks
-  outb(PIC1_DATA, mask_master);
+  outb(PIC1_DATA, 0xFF);
   io_wait();
-  outb(PIC2_DATA, mask_slave);
+  outb(PIC2_DATA, 0xFF);
   io_wait();
 }

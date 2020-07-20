@@ -1,6 +1,7 @@
 #include "kernel/ps2controller.h"
 #include "common/inline_assembly.h"
 #include "stdio.h"
+#include "kernel/PIC.h"
 
 
 uint8_t read_data_port(){
@@ -117,8 +118,8 @@ void initialize_ps2_controller(){
   uint8_t configByte = read_data_port();
   uint8_t dualChannel = (configByte & (0x1 << 5));
   
-  printf("Original Controller Config byte: %d\n", configByte);
-  printf("Dual Channel: %s\n", dualChannel ? "yes" : "no");
+  //printf("Original Controller Config byte: %d\n", configByte);
+  //printf("Dual Channel: %s\n", dualChannel ? "yes" : "no");
 
   // Set configuration byte
   configByte &= ~(1 << 0);
@@ -133,7 +134,7 @@ void initialize_ps2_controller(){
   WAIT_FOR_READ();
   uint8_t status = read_data_port();
   //printf("Controller self test result: %d\n", status);
-  printf("Controller test %s\n", (status == 0x55) ? "Passed" : "Failed");
+  //printf("Controller test %s\n", (status == 0x55) ? "Passed" : "Failed");
 
   // 7: Determine if there are 2 channels
   write_command_register(ENABLE_PORT_2);
@@ -141,8 +142,8 @@ void initialize_ps2_controller(){
   WAIT_FOR_READ();
   configByte = read_data_port();
   dualChannel = !(configByte & (0x1 << 5));
-  printf("Controller config byte: %x\n", configByte);
-  printf("Port 2 is %s\n", (dualChannel)? "enabled" : "disabled");
+  //printf("Controller config byte: %x\n", configByte);
+  //printf("Port 2 is %s\n", (dualChannel)? "enabled" : "disabled");
 
   if (dualChannel){
     write_command_register(DISABLE_PORT_2);
@@ -153,13 +154,13 @@ void initialize_ps2_controller(){
   write_command_register(TEST_PORT_1);
   WAIT_FOR_READ();
   uint8_t port1_res = read_data_port();
-  printf("Port 1 Test: %d - %s\n", port1_res, port1_res ? "failed" : "passed");
+  //printf("Port 1 Test: %d - %s\n", port1_res, port1_res ? "failed" : "passed");
 
   // Check port 2
   write_command_register(TEST_PORT_2);
   WAIT_FOR_READ();
   uint8_t port2_res = read_data_port();
-  printf("Port 2 Test: %d - %s\n", port2_res, port2_res ? "failed" : "passed");
+  //printf("Port 2 Test: %d - %s\n", port2_res, port2_res ? "failed" : "passed");
   
   // 9: Enable devices
   write_command_register(ENABLE_PORT_1);
@@ -168,12 +169,12 @@ void initialize_ps2_controller(){
   write_command_register(READ_CONFIG_BYTE);
   WAIT_FOR_READ();
   configByte = read_data_port();
-  printf("Config byte w/ devices enabled: %x\n", configByte);
+  //printf("Config byte w/ devices enabled: %x\n", configByte);
 
   // Enable IRQs
   configByte |= (1 << 0);
   configByte |= (1 << 1);
-  printf("New Controller Config Byte: %d\n", configByte);
+  //printf("New Controller Config Byte: %d\n", configByte);
   write_command_register(WRITE_CONFIG_BYTE);
   write_data_port(configByte);
 
@@ -181,31 +182,35 @@ void initialize_ps2_controller(){
   write_command_register(READ_CONFIG_BYTE);
   WAIT_FOR_READ();
   configByte = read_data_port();
-  printf("Final config byte = %x\n", configByte);
+  //printf("Final config byte = %x\n", configByte);
   
   // 10: Reset devices
   write_data_port(RESET_DEVICE);
   WAIT_FOR_READ();
   uint8_t port1_reset_status = read_data_port();
-  printf("port1 reset status = %x\n", port1_reset_status);
+  //printf("port1 reset status = %x\n", port1_reset_status);
   WAIT_FOR_READ();
   uint8_t self_test = read_data_port();
-  printf("port 1 self test = %x\n", self_test);
+  //printf("port 1 self test = %x\n", self_test);
 
   write_command_register(WRITE_PORT_2);
   write_data_port(RESET_DEVICE);
   WAIT_FOR_READ();
   uint8_t port2_reset_status = read_data_port();
-  printf("port2 reset status = %x\n", port2_reset_status);
+  //printf("port2 reset status = %x\n", port2_reset_status);
   WAIT_FOR_READ();
   self_test = read_data_port();
-  printf("port 2 self test = %x\n", self_test);
+  //printf("port 2 self test = %x\n", self_test);
 
   // Do some dummy reads
   flush_output_buffer();
 
   identify_device(PORT_1_DEVICE);
   identify_device(PORT_2_DEVICE);
+
+
+  // Unmask IRQ1
+  outb(PIC1_DATA, ~(0x2)); // mask = 1111 1101
 
 }
     

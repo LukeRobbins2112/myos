@@ -48,6 +48,7 @@ irq0:
  
 irq1:
 	pusha
+	xchgw %bx, %bx
 	cld
 	call irq1_handler
 	popa

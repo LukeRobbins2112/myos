@@ -3,6 +3,7 @@
 #include "common/inline_assembly.h"
 #include "kernel/PIC.h"
 #include "kernel/pmm.h"
+#include "stdio.h"
 
 
 #define PIC_EOI		0x20		/* End-of-interrupt command code */
@@ -23,7 +24,9 @@ void irq0_handler(void) {
 }
  
 void irq1_handler(void) {
+  uint8_t input = inb(0x60);
   PIC_sendEOI(1);
+  printf("Input: %x\n", input);
 }
  
 void irq2_handler(void) {
