@@ -9,6 +9,7 @@
 #include <kernel/boot_heap.h>
 #include <kernel/kheap.h>
 #include <kernel/ps2controller.h>
+#include <kernel/keyboard.h>
  
 void kernel_main(void) {
 
@@ -32,6 +33,7 @@ void kernel_main(void) {
   //TEST_kheap();
 
   initialize_ps2_controller();
+  initialize_keyboard_state();
   while(1){
     // infinite loop 
   }
