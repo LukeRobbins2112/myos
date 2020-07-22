@@ -7,7 +7,7 @@
 // Define useful constants/codes
 // --------------------------------------
 
-#define RING_BUFFER_SIZE 16  // Storage of incoming KeyInput structs
+#define RING_BUFFER_SIZE 64  // Storage of incoming KeyInput structs
 
 // Used for key code translation
 #define RELEASE_PREFIX  0xF0

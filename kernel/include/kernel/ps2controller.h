@@ -28,6 +28,7 @@
 #define DIAG_DUMP          0xAC
 #define TEST_PS2_CONT      0xAA
 #define IDENTIFY_DEVICE    0xF2
+#define TYPE_RATE_DELAY    0xF3
 #define ENABLE_SCANNING    0xF4
 #define DISABLE_SCANNING   0xF5
 #define RESET_DEVICE       0xFF // written to data port

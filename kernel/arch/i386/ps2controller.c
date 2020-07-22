@@ -208,6 +208,15 @@ void initialize_ps2_controller(){
   identify_device(PORT_1_DEVICE);
   identify_device(PORT_2_DEVICE);
 
+  // Set typematic rate/delay
+  cmd_dev_port(TYPE_RATE_DELAY, PORT_1_DEVICE);
+  WAIT_FOR_READ();
+  uint8_t response = read_data_port();
+  printf("Set typing cmd response: %x\n", response);
+  cmd_dev_port(0x7F, PORT_1_DEVICE);  // Slowest repeat rate / longest delay
+  WAIT_FOR_READ();
+  response = read_data_port();
+  printf("Set typing rates response: %x\n", response);
 
   // Unmask IRQ1
   outb(PIC1_DATA, ~(0x2)); // mask = 1111 1101

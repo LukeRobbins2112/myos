@@ -71,6 +71,7 @@ void push_key_event(key_input_t key_input){
   // Copy new input structure, advance pointer
   memcpy(buf_head, &key_input, sizeof(key_input_t));
   buf_head++;
+  // printf("key_input_count: %d\n", key_input_count);
 }
 
 uint8_t pop_key_event(key_input_t* dest){
@@ -110,18 +111,21 @@ void process_scan_code(uint8_t scan_code){
   case RIGHT_SHIFT:
     {
       Keyboard_State.shift_pressed = (Keyboard_State.break_code) ? 0 : 1;
+      Keyboard_State.break_code = 0;
       break;
     }
     
   case ALT:
     {
       Keyboard_State.alt_pressed = (Keyboard_State.break_code) ? 0 : 1;
+      Keyboard_State.break_code = 0;
       break;
     }
 
   case CONTROL:
     {
       Keyboard_State.ctrl_pressed = (Keyboard_State.break_code) ? 0 : 1;
+      Keyboard_State.break_code = 0;
       break;
     }
 
@@ -132,6 +136,7 @@ void process_scan_code(uint8_t scan_code){
       if (!Keyboard_State.break_code){
 	Keyboard_State.caps_lock = !Keyboard_State.caps_lock;
       }
+      Keyboard_State.break_code = 0;
       break;
     }
   
@@ -155,17 +160,12 @@ void process_scan_code(uint8_t scan_code){
       newKeyInput.unicode_value = 0; // @TODO implement this
 
       push_key_event(newKeyInput);
-
-      // Test
-      if (newKeyInput.rel_if_set){
-	//printf("New char: %x = %c\n", newKeyInput.key_code, newKeyInput.ascii_value);
-	printf("%c", newKeyInput.ascii_value);
-      }
+      Keyboard_State.break_code = 0;
     }
 
     // If it wasn't a break_code flag, clear that
     if (scan_code != RELEASE_PREFIX){
-      Keyboard_State.break_code = 0;
+      
     }
   
   

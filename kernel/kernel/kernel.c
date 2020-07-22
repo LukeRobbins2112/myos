@@ -35,6 +35,10 @@ void kernel_main(void) {
   initialize_ps2_controller();
   initialize_keyboard_state();
   while(1){
-    // infinite loop 
+    // infinite loop
+    key_input_t key;
+    if (pop_key_event(&key) && !key.rel_if_set){
+      printf("%c", key.ascii_value);
+    }
   }
 }
