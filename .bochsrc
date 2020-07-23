@@ -1,7 +1,7 @@
 megs: 128
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/local/share/bochs/VGABIOS-elpin-2.40
-cpu: reset_on_triple_fault=0
+cpu: ips=9000000, reset_on_triple_fault=0
 ata0-slave: type=cdrom, path=myos.iso, status=inserted
 floppya: 1_44=/dev/fd0, status=inserted
 boot: cdrom
@@ -9,3 +9,4 @@ log: bochsout.txt
 display_library: x
 mouse: enabled=0
 magic_break: enabled=1
+clock: sync=slowdown, time0=local
