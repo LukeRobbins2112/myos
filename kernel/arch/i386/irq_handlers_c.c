@@ -5,6 +5,7 @@
 #include "kernel/pmm.h"
 #include "stdio.h"
 #include "kernel/keyboard.h"
+#include "kernel/PIT_Timer.h"
 
 #define PIC_EOI		0x20		/* End-of-interrupt command code */
 
@@ -21,6 +22,7 @@ static void PIC_sendEOI(unsigned char irq)
 // Individual Interrupt Service ROutines
 void irq0_handler(void) {
   PIC_sendEOI(0);
+  process_tick();
 }
  
 void irq1_handler(void) {

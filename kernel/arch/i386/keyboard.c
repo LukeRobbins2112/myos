@@ -163,12 +163,6 @@ void process_scan_code(uint8_t scan_code){
       Keyboard_State.break_code = 0;
     }
 
-    // If it wasn't a break_code flag, clear that
-    if (scan_code != RELEASE_PREFIX){
-      
-    }
-  
-  
   }
 
 }

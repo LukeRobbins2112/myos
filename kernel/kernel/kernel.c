@@ -10,6 +10,7 @@
 #include <kernel/kheap.h>
 #include <kernel/ps2controller.h>
 #include <kernel/keyboard.h>
+#include <kernel/PIT_Timer.h>
  
 void kernel_main(void) {
 
@@ -32,6 +33,8 @@ void kernel_main(void) {
   // Run tests
   //TEST_kheap();
 
+  initialize_PIT_timer(100);
+    
   initialize_ps2_controller();
   initialize_keyboard_state();
   while(1){
