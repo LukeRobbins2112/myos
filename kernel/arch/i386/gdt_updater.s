@@ -13,9 +13,6 @@ gdt_flush:
 	movl 4(%esp), %eax
 	lgdt (%eax)
 
-	# Re-enable interrupts
-	#sti
-
 	# Load Data Segment Registers
 	movw $0x10, %ax
 	movw %ax, %ds

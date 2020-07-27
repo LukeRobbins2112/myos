@@ -16,6 +16,7 @@ void kernel_main(void) {
 
   // Setup GDT
   init_descriptor_tables();
+  breakpoint();
 
   // Setup IDT
   idt_init();

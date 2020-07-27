@@ -1,14 +1,23 @@
 #include "kernel/descriptor_table.h"
+#include "kernel/tss.h"
+#include "string.h"
+
+#define NUM_GDT_ENTRIES 6
+
+// Used for context switching
+tss_t usermode_tss;
 
 
 // For accessing assembly function
 extern void gdt_flush(uint32_t);
+extern void ldt_flush();
 // Internal function
 static void init_gdt();
 static void gdt_set_gate(int32_t idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
+static void gdt_set_tss_gate(int32_t idx, tss_t* task_struct);
 
 // We want 5 entries for our GDT: null, kernel code, kernel data, user code, user data
-gdt_entry_t gdt_entries[5];
+gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];
 gdt_ptr_t gdt_ptr;
 
 
@@ -23,7 +32,7 @@ static void init_gdt(){
   // The offset is the linear address of the table itself, which means that paging applies.
   // The size is the size of the table subtracted by 1. This is because the maximum value
   // of size is 65535, while the GDT can be up to 65536 bytes (a maximum of 8192 entries). 
-  gdt_ptr.size = (sizeof(gdt_entry_t) * 5) - 1;
+  gdt_ptr.size = (sizeof(gdt_entry_t) * NUM_GDT_ENTRIES) - 1;
   gdt_ptr.offset = (uint32_t)&gdt_entries[0];
 
   // Add entries to the table
@@ -33,7 +42,11 @@ static void init_gdt(){
   gdt_set_gate(3, 0x0, 0xFFFFFFFF, 0xFA, 0xCF);  // User space code
   gdt_set_gate(4, 0x0, 0xFFFFFFFF, 0xF2, 0xCF);  // User space data
 
+  // TSS for context switching
+  gdt_set_tss_gate(5, &usermode_tss);
+
   gdt_flush((uint32_t)&gdt_ptr);
+  ldt_flush();
 }
 
 static void gdt_set_gate(int32_t idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
@@ -58,8 +71,40 @@ static void gdt_set_gate(int32_t idx, uint32_t base, uint32_t limit, uint8_t acc
 }
 
 
+static void gdt_set_tss_gate(int32_t idx, tss_t* task_struct) {
 
+  // Kernel data segment offset
+  uint16_t kernel_data_offset = 0x10;
+  
+  // Get kernel stack pointer
+  uint32_t stack;
+  asm("mov %%esp, %0" : "=r"(stack));
 
+  // Setup the task struct
+  memset(task_struct, 0x0, sizeof(tss_t));
+  task_struct->ss0 = kernel_data_offset;
+  task_struct->esp0 = stack;
+  task_struct->cs = 0x0b;
+  task_struct->ds = 0x13;
+  task_struct->ss = 0x13;
+  task_struct->es = 0x13;
+  task_struct->fs = 0x13;
+  task_struct->gs = 0x13;
+
+  // Setup access byte
+  // Pr = 0b1, Priv = 0b11, S = 0b0, Ex = 0b1
+  // DC = 0b00, RW = 0b0, AC = 0b0
+  uint8_t access = 0xE9;
+
+  // Important bits are high 4 bits
+  // Gran = 0b0, Sz = 0b0, AlwaysZero = 0b00
+  uint8_t gran = 0x0F;
+
+  uint32_t base = (uint32_t)task_struct;
+  uint32_t limit = base + sizeof(tss_t);
+  gdt_set_gate(idx, base, limit, access, gran);
+
+}
 
 
 
