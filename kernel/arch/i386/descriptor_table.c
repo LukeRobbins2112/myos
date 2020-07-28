@@ -106,7 +106,9 @@ static void gdt_set_tss_gate(int32_t idx, tss_t* task_struct) {
 
 }
 
-
+void set_kernel_stack(uint32_t stack){
+  usermode_tss.esp0 = stack;
+}
 
 // -----------------------
 // Misc Debugging / Testing

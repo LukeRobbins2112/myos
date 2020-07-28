@@ -11,15 +11,20 @@
 #include <kernel/ps2controller.h>
 #include <kernel/keyboard.h>
 #include <kernel/PIT_Timer.h>
+
+extern void jump_usermode();
  
 void kernel_main(void) {
 
-  // Setup GDT
+  // Setup GDT and TSS
   init_descriptor_tables();
-  breakpoint();
+  //  breakpoint();
 
   // Setup IDT
   idt_init();
+
+  //  breakpoint();
+  // jump_usermode();
 
   // Setup physical memory manager
   setup_pmm();
