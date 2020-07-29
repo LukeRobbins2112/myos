@@ -10,7 +10,7 @@ jump_usermode:
 	movw %ax, %fs
 	movw %ax, %gs
 
-	movl %eax, %esp
+	movl %esp, %eax
 	pushl $0x23
 	pushl %eax
 	pushf
