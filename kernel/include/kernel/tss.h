@@ -46,6 +46,6 @@ typedef struct TSS {
 
 } __attribute__((packed)) tss_t;
 
-extern tss_t usermode_tss;
+extern tss_t context_tss;
 
 #endif // _TSS_H

@@ -5,7 +5,7 @@
 #define NUM_GDT_ENTRIES 6
 
 // Used for context switching
-tss_t usermode_tss;
+tss_t context_tss;
 
 
 // For accessing assembly function
@@ -43,7 +43,7 @@ static void init_gdt(){
   gdt_set_gate(4, 0x0, 0xFFFFFFFF, 0xF2, 0xCF);  // User space data
 
   // TSS for context switching
-  gdt_set_tss_gate(5, &usermode_tss);
+  gdt_set_tss_gate(5, &context_tss);
 
   gdt_flush((uint32_t)&gdt_ptr);
   ldt_flush();
@@ -107,7 +107,7 @@ static void gdt_set_tss_gate(int32_t idx, tss_t* task_struct) {
 }
 
 void set_kernel_stack(uint32_t stack){
-  usermode_tss.esp0 = stack;
+  context_tss.esp0 = stack;
 }
 
 // -----------------------
