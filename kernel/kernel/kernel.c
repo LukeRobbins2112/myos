@@ -43,6 +43,7 @@ void kernel_main(void) {
   // Multitasking
   initialize_multitasking();
   tcb_t* new_task = create_kernel_task(&test_mt);
+  switch_to_task(new_task);
 
   // Setup screen/graphics, print
   terminal_initialize();
