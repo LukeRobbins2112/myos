@@ -4,10 +4,12 @@
 #include <kernel/tss.h>
 #include <string.h>
 #include <kernel/paging.h>
+#include <common/inline_assembly.h>
 
 tcb_t* curr_tcb = 0;
 
 void initialize_multitasking(){
+  breakpoint();
   curr_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!curr_tcb){
     printf("Err allocating initial tcb\n");
@@ -33,6 +35,7 @@ void initialize_multitasking(){
 }
 
 tcb_t* create_kernel_task(void (*entry_EIP)()){
+  breakpoint();
   tcb_t* new_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!new_tcb){
     printf("Err allocating initial tcb\n");
@@ -59,7 +62,7 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   (*(uint32_t*)proc_stack) = (uint32_t)entry_EIP;
 
   // @TODO initialize this w/ function for new Page Directory
-  page_directory_t* new_vaddr_space = (page_directory_t*)0;
+  page_directory_t* new_vaddr_space = (page_directory_t*)0xFFFFF000;
   
   new_tcb->esp = stack_end - initial_stack_size;
   new_tcb->esp0 = stack_end;
@@ -67,4 +70,11 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   new_tcb->state = TASK_READY;
 
   return new_tcb;
+}
+
+extern void switch_to_task_asm(tcb_t* new_task); // Assembly function
+void switch_to_task(tcb_t* new_task){
+  CLI();
+  switch_to_task_asm(new_task);
+  STI();
 }

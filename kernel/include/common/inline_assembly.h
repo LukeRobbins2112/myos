@@ -31,5 +31,12 @@ static inline void breakpoint(void)
 		   "xchgw %bx, %bx\n\t" );
 }
 
+static inline void CLI(void) {
+  asm volatile("cli\n\t");
+}
+
+static inline void STI(void) {
+  asm volatile("sti\n\t");
+}
 
 #endif // _INLINE_ASSEMBLY_H

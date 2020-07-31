@@ -28,16 +28,8 @@ typedef struct page_table {
 } page_table_t;
 
 typedef struct page_directory {
-
   // Our actual page_tables lookup structure
   page_table_t* page_tables[1024];
-
-  // Physical locations of page tables
-  // uint32_t page_tables_physical[1024];
-
-  // Address of page_tables_physical
-  //uint32_t physicalTablesAddr;
-
 } page_directory_t;
 
 

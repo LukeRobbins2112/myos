@@ -11,8 +11,16 @@
 #include <kernel/ps2controller.h>
 #include <kernel/keyboard.h>
 #include <kernel/PIT_Timer.h>
+#include <kernel/multitasking.h>
 
 extern void jump_usermode();
+
+void test_mt(){
+  breakpoint();
+  int i = 0;
+  int j = 1;
+  int res = i+j;
+}
  
 void kernel_main(void) {
 
@@ -31,6 +39,10 @@ void kernel_main(void) {
 
   // Set up kernel heap
   setup_kheap();
+
+  // Multitasking
+  initialize_multitasking();
+  tcb_t* new_task = create_kernel_task(&test_mt);
 
   // Setup screen/graphics, print
   terminal_initialize();
