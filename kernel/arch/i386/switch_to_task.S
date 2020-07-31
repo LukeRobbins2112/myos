@@ -1,21 +1,20 @@
 
-	.section .rodata
+	
+	.section .text
+
 .equ esp_offset,  0
 .equ esp0_offset, 4
 .equ cr3_offset,  8
 	
 .equ tss_esp0,    4
 	
-	.section .text
+# address of "current" task control block
+.extern curr_tcb
+.extern context_tss
 
-	# address of "current" task control block
-	.extern curr_tcb
-	.extern context_tss
-	
-	.globl switch_to_task_asm
-	.type switch_to_task_asm, @function
-
-	#  Caller must disable IRQs before calling, and enable after return
+#  Caller must disable IRQs before calling, and enable after return	
+.globl switch_to_task_asm
+.type switch_to_task_asm, @function
 switch_to_task_asm:
 
 	# Save previous task's state
