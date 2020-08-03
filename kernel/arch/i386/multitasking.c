@@ -9,7 +9,7 @@
 tcb_t* curr_tcb = 0;
 
 void initialize_multitasking(){
-  breakpoint();
+  //breakpoint();
   curr_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!curr_tcb){
     printf("Err allocating initial tcb\n");
@@ -35,17 +35,19 @@ void initialize_multitasking(){
 }
 
 tcb_t* create_kernel_task(void (*entry_EIP)()){
-  breakpoint();
+  //breakpoint();
   tcb_t* new_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!new_tcb){
     printf("Err allocating initial tcb\n");
     return 0;
   }
 
+  //breakpoint();
   // Grab some memory for the process stack
   uint32_t stack_size = 1024;
   void* proc_stack = kalloc(stack_size, 0, kheap);
-  uint32_t stack_end = (uint32_t)proc_stack + stack_size; // start at the end
+  //breakpoint();
+  uint32_t stack_bottom = (uint32_t)proc_stack + stack_size; // start at the end
 
   // Space for registers we pop off the stack
   // Pop order: ebp, edi, esi, ebx, eip
@@ -56,16 +58,18 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   // Clean out the new stack to zero space for soon to be popped regs
   // We'll then set the eip separately
   // Note the pointer arithmetic: (proc_stack-5) = proc_stack - (5 * 4bytes)
-  memset((uint32_t*)proc_stack - 5, 0x0, initial_stack_size);
+  memset((uint32_t*)stack_bottom - 5, 0x0, initial_stack_size);
+
+  //breakpoint();
 
   // Set the EIP for the new process
-  (*(uint32_t*)proc_stack) = (uint32_t)entry_EIP;
+  (*((uint32_t*)stack_bottom - 1)) = (uint32_t)entry_EIP;
 
   // @TODO initialize this w/ function for new Page Directory
-  page_directory_t* new_vaddr_space = (page_directory_t*)0xFFFFF000;
+  page_directory_t* new_vaddr_space = (page_directory_t*)0x00106000;
   
-  new_tcb->esp = stack_end - initial_stack_size;
-  new_tcb->esp0 = stack_end;
+  new_tcb->esp = stack_bottom - initial_stack_size;
+  new_tcb->esp0 = stack_bottom;
   new_tcb->cr3 = (uint32_t)new_vaddr_space;
   new_tcb->state = TASK_READY;
 

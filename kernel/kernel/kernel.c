@@ -15,11 +15,30 @@
 
 extern void jump_usermode();
 
+void do_something_else(){
+  printf("doing something else!\n");
+}
+
 void test_mt(){
   breakpoint();
-  int i = 0;
-  int j = 1;
-  int res = i+j;
+  terminal_initialize();
+  breakpoint();
+  printf("Made it to new task!\n");
+  breakpoint();
+  do_something_else();
+  breakpoint();
+
+  initialize_PIT_timer(100);
+  initialize_ps2_controller();
+  initialize_keyboard_state();
+  while(1){
+    // infinite loop
+    key_input_t key;
+    if (pop_key_event(&key) && !key.rel_if_set){
+      printf("%c", key.ascii_value);
+    }
+  }
+    
 }
  
 void kernel_main(void) {
