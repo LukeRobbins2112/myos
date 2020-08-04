@@ -32,11 +32,19 @@ static inline void breakpoint(void)
 }
 
 static inline void CLI(void) {
-  asm volatile("cli\n\t");
+  asm volatile("cli");
 }
 
 static inline void STI(void) {
-  asm volatile("sti\n\t");
+  asm volatile("sti");
+}
+
+static inline void INT(uint8_t interrupt) {
+  breakpoint();
+  asm volatile("int %0"
+	       : /* output */
+	       : [interrupt] "g" (interrupt)
+	       : /*clobbered*/);
 }
 
 #endif // _INLINE_ASSEMBLY_H
