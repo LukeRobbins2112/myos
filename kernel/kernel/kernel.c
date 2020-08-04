@@ -12,6 +12,7 @@
 #include <kernel/keyboard.h>
 #include <kernel/PIT_Timer.h>
 #include <kernel/multitasking.h>
+#include <common/inline_assembly.h>
 
 extern void jump_usermode();
 
@@ -27,6 +28,8 @@ void test_mt(){
   breakpoint();
   do_something_else();
   breakpoint();
+
+  STI();
 
   initialize_PIT_timer(100);
   initialize_ps2_controller();
