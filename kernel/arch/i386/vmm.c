@@ -11,6 +11,16 @@ extern uint32_t kernel_end;
 // Memory Manipulation helpers
 // ----------------------------------------------------
 
+void * get_pt_physaddr(void* virtualaddr){
+  uint32_t pd_index = (uint32_t)virtualaddr >> 22;
+
+  // Get page directory, check whether the PD entry is present.
+  page_directory_t * pd = (page_directory_t *)0xFFFFF000;
+  uint32_t page_table_phys = (uint32_t)(pd->page_tables[pd_index]);
+
+  return (void *)page_table_phys;
+}
+
 void * get_physaddr(void * virtualaddr)
 {
   uint32_t pd_index = (uint32_t)virtualaddr >> 22;
@@ -18,7 +28,7 @@ void * get_physaddr(void * virtualaddr)
 
   // Get page directory, check whether the PD entry is present.
   uint32_t * pd = (uint32_t *)0xFFFFF000;
-  uint32_t page_table_phys = (uint32_t)((page_directory_t*)pd)->page_tables[pd_index];
+  uint32_t page_table_phys = (uint32_t)get_pt_physaddr(virtualaddr);
   if ((page_table_phys & 0x1) == 0){
     return 0;
   }

@@ -7,6 +7,7 @@
 // Memory Manipulation Functions
 // --------------------------------------------
 
+void * get_pt_physaddr(void * virtualaddr);
 void * get_physaddr(void * virtualaddr);
 
 // --------------------------------------------
