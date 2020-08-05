@@ -1,5 +1,6 @@
 #include "kernel/vmm.h"
 #include "kernel/pmm.h"
+#include <common/inline_assembly.h>
 
 // -----------------------------------
 // Page Directory -- defined in boot.S
@@ -11,37 +12,53 @@ extern uint32_t kernel_end;
 // Memory Manipulation helpers
 // ----------------------------------------------------
 
+page_directory_t* get_page_directory(){
+  return (page_directory_t *)0xFFFFF000;
+}
+
+uint32_t get_pd_index(uint32_t addr){
+  return addr >> 22;
+}
+
+uint32_t get_pt_index(uint32_t addr){
+  return ((addr >> 12) & 0x3FF);
+}
+
 void * get_pt_physaddr(void* virtualaddr){
-  uint32_t pd_index = (uint32_t)virtualaddr >> 22;
+  uint32_t pd_index = get_pd_index((uint32_t)virtualaddr);
 
   // Get page directory, check whether the PD entry is present.
-  page_directory_t * pd = (page_directory_t *)0xFFFFF000;
+  page_directory_t * pd = get_page_directory();
   uint32_t page_table_phys = (uint32_t)(pd->page_tables[pd_index]);
 
   return (void *)page_table_phys;
 }
 
+void* get_pt_virtaddr(uint32_t pd_index){
+  return (void*)(((uint32_t *)0xFFC00000) + (0x400 * pd_index));
+}
+
 void * get_physaddr(void * virtualaddr)
 {
-  uint32_t pd_index = (uint32_t)virtualaddr >> 22;
-  uint32_t pt_index = (uint32_t)virtualaddr >> 12 & 0x03FF;
+  uint32_t pd_index = get_pd_index(virtualaddr);
+  uint32_t pt_index = get_pt_index(virtualaddr);
 
-  // Get page directory, check whether the PD entry is present.
-  uint32_t * pd = (uint32_t *)0xFFFFF000;
+  // Get page table, make sure it's present
   uint32_t page_table_phys = (uint32_t)get_pt_physaddr(virtualaddr);
   if ((page_table_phys & 0x1) == 0){
     return 0;
   }
 
   // Get page table, check whether the PT entry is present.  
-  uint32_t * pt = ((uint32_t *)0xFFC00000) + (0x400 * pd_index);
-  page_t pte = ((page_table_t*)pt)->pages[pt_index];
+  page_table_t * pt = (page_table_t *)get_pt_virtaddr(pd_index);
+  page_t pte = pt->pages[pt_index];
   if (!pte.present){
     return 0;
   }
-  
-  
-  return (void *)((pt[pt_index] & ~0xFFF) + ((uint32_t)virtualaddr & 0xFFF));
+
+  uint32_t base = (pte.frame << 12);
+  uint32_t offset = ((unsigned long)virtualaddr & 0xFFF);
+  return (void *)(base + offset);
 }
 
 // ---------------------------------------------------------
