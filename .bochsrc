@@ -9,4 +9,4 @@ log: bochsout.txt
 display_library: x
 mouse: enabled=0
 magic_break: enabled=1
-clock: sync=slowdown, time0=local
+# clock: sync=slowdown, time0=local
