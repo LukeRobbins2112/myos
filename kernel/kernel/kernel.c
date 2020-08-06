@@ -21,19 +21,13 @@ void do_something_else(){
 }
 
 void test_mt(){
-  breakpoint();
-  terminal_initialize();
-  breakpoint();
   printf("Made it to new task!\n");
-  breakpoint();
   do_something_else();
-  breakpoint();
+  uint32_t pd_addr = (uint32_t)get_physaddr(0xFFFFF000);
+  printf("Pd addr: %x\n", pd_addr);
 
   STI();
 
-  initialize_PIT_timer(100);
-  initialize_ps2_controller();
-  initialize_keyboard_state();
   while(1){
     // infinite loop
     key_input_t key;
@@ -53,8 +47,9 @@ void kernel_main(void) {
   // Setup IDT
   idt_init();
 
-  //  breakpoint();
-  // jump_usermode();
+  // Setup screen/graphics, print
+  terminal_initialize();
+  printf("Hello, kernel World!\n");
 
   // Setup physical memory manager
   setup_pmm();
@@ -62,22 +57,23 @@ void kernel_main(void) {
   // Set up kernel heap
   setup_kheap();
 
+  // Run tests
+  //TEST_kheap();
+
+  // Initialize hardware
+  initialize_PIT_timer(100);
+  initialize_ps2_controller();
+  initialize_keyboard_state();
+
   // Multitasking
   initialize_multitasking();
   tcb_t* new_task = create_kernel_task(&test_mt);
   switch_to_task(new_task);
 
-  // Setup screen/graphics, print
-  terminal_initialize();
-  printf("Hello, kernel World!\n");
+  // --------------------------------------------
+  // Won't go past this point if we switch task
+  // -------------------------------------------
 
-  // Run tests
-  //TEST_kheap();
-
-  initialize_PIT_timer(100);
-    
-  initialize_ps2_controller();
-  initialize_keyboard_state();
   while(1){
     // infinite loop
     key_input_t key;
