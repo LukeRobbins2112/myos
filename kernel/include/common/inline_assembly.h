@@ -2,6 +2,7 @@
 #define _INLINE_ASSEMBLY_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 static inline void outb(uint16_t port, uint8_t val)
 {
@@ -24,11 +25,15 @@ static inline void io_wait(void)
                    "2:" );
 }
 
-static inline void breakpoint(void)
+static inline void breakpoint(char* label)
 {
-    asm volatile ( "xchgw %bx, %bx\n\t"
-                   "xchgw %bx, %bx\n\t"
-		   "xchgw %bx, %bx\n\t" );
+  if (label){
+    printf("Breakpoint %s\n", label);
+  }
+  
+  asm volatile ( "xchgw %bx, %bx\n\t"
+		 "xchgw %bx, %bx\n\t"
+		 "xchgw %bx, %bx\n\t" );
 }
 
 static inline void CLI(void) {
@@ -40,7 +45,6 @@ static inline void STI(void) {
 }
 
 static inline void INT(uint8_t interrupt) {
-  breakpoint();
   asm volatile("int %0"
 	       : /* output */
 	       : [interrupt] "g" (interrupt)
