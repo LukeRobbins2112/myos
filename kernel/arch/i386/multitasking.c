@@ -23,10 +23,6 @@ void initialize_multitasking(){
   uint32_t cr3;
   asm("mov %%cr3, %0" : "=r"(cr3));
 
-  // Grab some memory for the process stack
-  //uint32_t stack_size = 1024;
-  //void* proc_stack = kalloc(stack_size);
-
   curr_tcb->esp = esp;
   curr_tcb->esp0 = context_tss.esp0;
   curr_tcb->cr3 = cr3;

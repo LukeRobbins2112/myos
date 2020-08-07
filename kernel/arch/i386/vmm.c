@@ -65,27 +65,6 @@ void * get_physaddr(uint32_t virtualaddr)
 // Paging Logic
 // ---------------------------------------------------------
 
-void initialize_paging(){
-
-  // Set up initial kernel heap page table
-  //page_table_t* kheap_page_table = (page_table_t*)0xD0000000;
-  
-  
-
-}
-
-// @TODO implementation
-// Should really call raw assemly function, avoid inline
-//void switch_page_directory(page_directory_t* page_dir){
-
-  /* current_directory = dir; */
-  /* asm volatile("mov %0, %%cr3":: "r"(&dir->tablesPhysical)); */
-  /* u32int cr0; */
-  /* asm volatile("mov %%cr0, %0": "=r"(cr0)); */
-  /* cr0 |= 0x80000000; // Enable paging! */
-  /* asm volatile("mov %0, %%cr0":: "r"(cr0)); */
-//}
-
 page_t* get_page(uint32_t vaddr, int create){
 
   uint32_t pd_index = get_pd_index(vaddr);
