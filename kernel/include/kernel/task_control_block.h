@@ -15,7 +15,11 @@ typedef struct TCB {
   uint32_t esp0;
   uint32_t cr3;
   TASK_STATE state;
+  uint32_t task_id;
 
+  // Linked List pointers
+  struct TCB* prev_task;
+  struct TCB* next_task;
 } tcb_t;
 
 

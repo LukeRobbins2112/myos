@@ -21,7 +21,7 @@ switch_to_task_asm:
 	# %eax, %ecx, edx are caller saved;
 	# %eip was pushed by call instruction
 
-	xchgw %bx, %bx
+	# xchgw %bx, %bx
 	
 	pushl %ebx
 	pushl %esi
@@ -30,7 +30,7 @@ switch_to_task_asm:
 
 	#  Load previous task
 	# save prev task %esp
-	movl $curr_tcb, %edi
+	movl curr_tcb, %edi
 	movl %esp, esp_offset(%edi) 
 
 	#  Load next task's state

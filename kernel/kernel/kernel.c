@@ -20,19 +20,19 @@ void do_something_else(){
   printf("doing something else!\n");
 }
 
+void test_mt_2();
 void test_mt(){
   printf("Made it to new task!\n");
-  do_something_else();
-  uint32_t pd_addr = (uint32_t)get_physaddr(0xFFFFF000);
-  printf("Pd addr: %x\n", pd_addr);
 
   STI();
 
+  int bar = 0;
   while(1){
     // infinite loop
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
-      printf("%c", key.ascii_value);
+      printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
+      switch_to_next_task();
     }
   }
     
@@ -67,18 +67,23 @@ void kernel_main(void) {
 
   // Multitasking
   initialize_multitasking();
-  tcb_t* new_task = create_kernel_task(&test_mt);
-  switch_to_task(new_task);
+  /* tcb_t* new_task = */ create_kernel_task(&test_mt);
+  //switch_to_task(new_task);
+  switch_to_next_task();
+
+  printf("Returned!\n");
 
   // --------------------------------------------
   // Won't go past this point if we switch task
   // -------------------------------------------
 
+  int foo = 0;
   while(1){
     // infinite loop
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
-      printf("%c", key.ascii_value);
+      printf("Foo(%d): %d - %c\n", get_task_id(), foo++, key.ascii_value);
+      switch_to_next_task();
     }
   }
 }
