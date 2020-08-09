@@ -9,6 +9,7 @@
 
 void * get_pt_physaddr(uint32_t virtualaddr);
 void * get_physaddr(uint32_t virtualaddr);
+page_directory_t* get_page_directory();
 
 // --------------------------------------------
 // Paging Functions

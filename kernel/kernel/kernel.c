@@ -31,7 +31,11 @@ void test_mt(){
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
       printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
-      switch_to_next_task();
+      if (bar == 2){
+	unblock_task(blocked_tasks);
+      } else if (bar > 2) {
+	schedule();
+      }
     }
   }
     
@@ -67,9 +71,11 @@ void kernel_main(void) {
   // Multitasking
   initialize_multitasking();
   create_kernel_task(&test_mt); //TID = 1
-  create_kernel_task(&test_mt); // TID = 2
+  //create_kernel_task(&test_mt); // TID = 2
+
+  block_curr_task();
   
-  switch_to_next_task();
+  //schedule();
 
   printf("Returned!\n");
 
@@ -83,7 +89,7 @@ void kernel_main(void) {
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
       printf("Foo(%d): %d - %c\n", get_task_id(), foo++, key.ascii_value);
-      switch_to_next_task();
+      schedule();
     }
   }
 }

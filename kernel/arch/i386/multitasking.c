@@ -5,6 +5,7 @@
 #include <string.h>
 #include <kernel/paging.h>
 #include <common/inline_assembly.h>
+#include <kernel/vmm.h>
 
 static uint32_t task_id_counter = 0;
 static uint32_t IRQ_disable_counter = 0;
@@ -12,6 +13,8 @@ static uint32_t IRQ_disable_counter = 0;
 tcb_t* curr_tcb = 0;
 tcb_t* task_list_head = 0;
 tcb_t* task_list_tail = 0;
+
+tcb_t* blocked_tasks = 0;
 
 // Declarations
 void append_ready_task(tcb_t* ready_task);
@@ -89,7 +92,7 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   (*((uint32_t*)stack_bottom - 1)) = (uint32_t)entry_EIP;
 
   // @TODO initialize this w/ function for new Page Directory
-  page_directory_t* new_vaddr_space = (page_directory_t*)0x00106000;
+  page_directory_t* new_vaddr_space = (page_directory_t*)get_physaddr((uint32_t)get_page_directory());
   
   new_tcb->esp = stack_bottom - initial_stack_size;
   new_tcb->esp0 = stack_bottom;
@@ -134,8 +137,45 @@ tcb_t* get_next_task(){
   return next_task;
 }
 
-void switch_to_next_task(){
+void block_curr_task(){
   lock_scheduler();
+  blocked_tasks = curr_tcb;
+  switch_to_next_task();
+  unlock_scheduler();
+}
+
+void unblock_task(tcb_t* task){
+  lock_scheduler();
+  if (!task_list_head){
+    // Only one task was running
+    
+    // Add current task to ready list
+    append_ready_task(curr_tcb);
+    curr_tcb->state = TASK_READY;
+
+    // Pre-empty with newly unblocked task
+    task->state = TASK_RUNNING;
+    switch_to_task(task);
+  } else {
+    // At least one task on ready queue, don't pre-empt
+    append_ready_task(task);
+  }
+  unlock_scheduler();
+}
+
+void schedule(){
+  lock_scheduler();
+
+  // Add current task to ready list
+  append_ready_task(curr_tcb);
+  curr_tcb->state = TASK_READY;
+
+  // Pop new task off of ready list, switch to it
+  switch_to_next_task();
+  unlock_scheduler();
+}
+
+void switch_to_next_task(){
   tcb_t* next_task = get_next_task();
 
   // If no other tasks, nothing to do
@@ -143,21 +183,13 @@ void switch_to_next_task(){
     return;
   }
 
-  // Add current task to ready list
-  append_ready_task(curr_tcb);
-  curr_tcb->state = TASK_READY;
-
   // Update ready list head
   task_list_head = next_task->next_task;
 
   // Switch to new task
   next_task->state = TASK_RUNNING;
   switch_to_task(next_task);
-  unlock_scheduler();
-  printf("Unlocked scheduler for TID %d\n", curr_tcb->task_id);
 }
-
-
 
 extern void switch_to_task_asm(tcb_t* new_task); // Assembly function
 void switch_to_task(tcb_t* new_task){
