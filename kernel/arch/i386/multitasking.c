@@ -12,8 +12,10 @@ tcb_t* curr_tcb = 0;
 tcb_t* task_list_head = 0;
 tcb_t* task_list_tail = 0;
 
+// Declarations
+void append_ready_task(tcb_t* ready_task);
+
 void initialize_multitasking(){
-  //breakpoint();
   curr_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!curr_tcb){
     printf("Err allocating initial tcb\n");
@@ -35,24 +37,19 @@ void initialize_multitasking(){
   curr_tcb->next_task = 0;
   curr_tcb->prev_task = 0;
 
-  // Set first tcb to be the start of the task list
-  task_list_head = curr_tcb;
-  task_list_tail = curr_tcb;
+  // First tcb is running, no need to add to ready queue
 }
 
 tcb_t* create_kernel_task(void (*entry_EIP)()){
-  //breakpoint("create_kernel_task");
   tcb_t* new_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!new_tcb){
     printf("Err allocating initial tcb\n");
     return 0;
   }
 
-  //breakpoint();
   // Grab some memory for the process stack
   uint32_t stack_size = 1024;
   void* proc_stack = kalloc(stack_size, 0, kheap);
-  //breakpoint();
   uint32_t stack_bottom = (uint32_t)proc_stack + stack_size; // start at the end
 
   // Space for registers we pop off the stack
@@ -66,8 +63,6 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   // Note the pointer arithmetic: (proc_stack-5) = proc_stack - (5 * 4bytes)
   memset((uint32_t*)stack_bottom - 5, 0x0, initial_stack_size);
 
-  //breakpoint();
-
   // Set the EIP for the new process
   (*((uint32_t*)stack_bottom - 1)) = (uint32_t)entry_EIP;
 
@@ -80,13 +75,8 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   new_tcb->state = TASK_READY;
   new_tcb->task_id = task_id_counter++;
 
-  // When creating a new task, append to back of the list
-  new_tcb->next_task = 0;
-  new_tcb->prev_task = task_list_tail;
-  task_list_tail->next_task = new_tcb;
-  task_list_tail = new_tcb;
-
-  //breakpoint("create_kernel_task end");
+  // Add to the ready queue
+  append_ready_task(new_tcb);
 
   return new_tcb;
 }
@@ -99,25 +89,46 @@ uint32_t get_task_id(){
   return curr_tcb->task_id;
 }
 
-tcb_t* get_next_task(){
-  tcb_t* next_task = curr_tcb->next_task;
-  if (!next_task) {
-    // Wrap around if at end of list
-    return task_list_head;
+void append_ready_task(tcb_t* ready_task){
+  if (!task_list_head){
+    task_list_head = ready_task;
+    task_list_tail = ready_task;
+    ready_task->next_task = 0;
+    ready_task->prev_task = 0;
+    return;
   }
 
+  // Set up pointers to add to linked list
+  ready_task->next_task = 0;
+  ready_task->prev_task = task_list_tail;
+  task_list_tail->next_task = ready_task;
+
+  // ready_task is now at the end of the list
+  task_list_tail = ready_task;
+}
+
+tcb_t* get_next_task(){
+  tcb_t* next_task = task_list_head;
   return next_task;
 }
 
 void switch_to_next_task(){
-  //breakpoint("switch_to_next_task");
-  tcb_t* next_task = get_next_task();
+    tcb_t* next_task = get_next_task();
 
   // If no other tasks, nothing to do
   if (!next_task || (next_task == curr_tcb)){
     return;
   }
-  
+
+  // Add current task to ready list
+  append_ready_task(curr_tcb);
+  curr_tcb->state = TASK_READY;
+
+  // Update ready list head
+  task_list_head = next_task->next_task;
+
+  // Switch to new task
+  next_task->state = TASK_RUNNING;
   switch_to_task(next_task);
 }
 

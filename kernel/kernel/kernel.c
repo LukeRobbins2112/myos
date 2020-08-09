@@ -20,7 +20,6 @@ void do_something_else(){
   printf("doing something else!\n");
 }
 
-void test_mt_2();
 void test_mt(){
   printf("Made it to new task!\n");
 
@@ -67,8 +66,9 @@ void kernel_main(void) {
 
   // Multitasking
   initialize_multitasking();
-  /* tcb_t* new_task = */ create_kernel_task(&test_mt);
-  //switch_to_task(new_task);
+  create_kernel_task(&test_mt);
+  create_kernel_task(&test_mt);
+  
   switch_to_next_task();
 
   printf("Returned!\n");
