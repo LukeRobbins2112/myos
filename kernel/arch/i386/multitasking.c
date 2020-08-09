@@ -7,6 +7,7 @@
 #include <common/inline_assembly.h>
 
 static uint32_t task_id_counter = 0;
+static uint32_t IRQ_disable_counter = 0;
 
 tcb_t* curr_tcb = 0;
 tcb_t* task_list_head = 0;
@@ -14,6 +15,27 @@ tcb_t* task_list_tail = 0;
 
 // Declarations
 void append_ready_task(tcb_t* ready_task);
+
+void lock_scheduler(){
+#ifndef SMP
+  CLI();
+  IRQ_disable_counter++;
+#endif // #ifndef SMP
+}
+
+void unlock_scheduler(){
+#ifndef SMP
+  IRQ_disable_counter--;
+  if (IRQ_disable_counter == 0){
+    STI();
+  }
+#endif // #ifndef SMP
+}
+
+
+// ---------------------------------
+// Main Multiaskings & Scheduling API
+// ---------------------------------
 
 void initialize_multitasking(){
   curr_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
@@ -113,7 +135,8 @@ tcb_t* get_next_task(){
 }
 
 void switch_to_next_task(){
-    tcb_t* next_task = get_next_task();
+  lock_scheduler();
+  tcb_t* next_task = get_next_task();
 
   // If no other tasks, nothing to do
   if (!next_task || (next_task == curr_tcb)){
@@ -130,11 +153,13 @@ void switch_to_next_task(){
   // Switch to new task
   next_task->state = TASK_RUNNING;
   switch_to_task(next_task);
+  unlock_scheduler();
+  printf("Unlocked scheduler for TID %d\n", curr_tcb->task_id);
 }
+
+
 
 extern void switch_to_task_asm(tcb_t* new_task); // Assembly function
 void switch_to_task(tcb_t* new_task){
-  CLI();
   switch_to_task_asm(new_task);
-  STI();
 }

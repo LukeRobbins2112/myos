@@ -23,7 +23,7 @@ void do_something_else(){
 void test_mt(){
   printf("Made it to new task!\n");
 
-  STI();
+  unlock_scheduler();
 
   int bar = 0;
   while(1){
@@ -66,8 +66,8 @@ void kernel_main(void) {
 
   // Multitasking
   initialize_multitasking();
-  create_kernel_task(&test_mt);
-  create_kernel_task(&test_mt);
+  create_kernel_task(&test_mt); //TID = 1
+  create_kernel_task(&test_mt); // TID = 2
   
   switch_to_next_task();
 

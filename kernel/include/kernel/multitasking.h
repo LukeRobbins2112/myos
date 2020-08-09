@@ -26,5 +26,6 @@ void switch_to_next_task();
 // Other Global Functions
 // ----------------------------------
 uint32_t get_task_id();
+void unlock_scheduler();
 
 #endif // _MULTITASKING_H
