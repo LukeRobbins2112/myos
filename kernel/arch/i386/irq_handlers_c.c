@@ -5,7 +5,8 @@
 #include "kernel/pmm.h"
 #include "stdio.h"
 #include "kernel/keyboard.h"
-#include "kernel/PIT_Timer.h"
+#include "kernel/timer.h"
+#include "kernel/sleep.h"
 
 #define PIC_EOI		0x20		/* End-of-interrupt command code */
 
@@ -21,8 +22,15 @@ static void PIC_sendEOI(unsigned char irq)
 
 // Individual Interrupt Service ROutines
 void irq0_handler(void) {
+  // Increment  timer
+  clock_tick();
+
+  // Now perform handler code / timer updates
+  wake_sleeping_tasks();
+    
+  // Send EOI, we got what we needed from the interrupt
   PIC_sendEOI(0);
-  process_tick();
+
 }
  
 void irq1_handler(void) {
