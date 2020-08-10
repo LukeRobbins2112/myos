@@ -144,9 +144,9 @@ void block_curr_task(){
   unlock_scheduler();
 }
 
-void unblock_task(tcb_t* task){
+void unblock_task(tcb_t* task, uint8_t preempt){
   lock_scheduler();
-  if (!task_list_head){
+  if (!task_list_head || preempt){
     // Only one task was running
     
     // Add current task to ready list

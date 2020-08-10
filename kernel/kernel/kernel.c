@@ -32,7 +32,7 @@ void test_mt(){
     if (pop_key_event(&key) && !key.rel_if_set){
       printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
       if (bar == 2){
-	unblock_task(blocked_tasks);
+	unblock_task(blocked_tasks, 0);
       } else if (bar > 2) {
 	schedule();
       }
@@ -64,14 +64,14 @@ void kernel_main(void) {
   //TEST_kheap();
 
   // Initialize hardware
-  initialize_PIT_timer(100);
+  initialize_PIT_timer(PIT_OUTPUT_FREQ);
   initialize_ps2_controller();
   initialize_keyboard_state();
 
   // Multitasking
   initialize_multitasking();
   create_kernel_task(&test_mt); //TID = 1
-  //create_kernel_task(&test_mt); // TID = 2
+  create_kernel_task(&test_mt); // TID = 2
 
   block_curr_task();
   

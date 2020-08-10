@@ -23,7 +23,7 @@ void switch_to_task(tcb_t* new_task);
 void switch_to_next_task();
 void schedule();
 void block_curr_task();
-void unblock_task(tcb_t* task);
+void unblock_task(tcb_t* task, uint8_t preempt);
 
 // ----------------------------------
 // Other Global Functions
