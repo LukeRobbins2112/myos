@@ -11,8 +11,10 @@
 #include <kernel/ps2controller.h>
 #include <kernel/keyboard.h>
 #include <kernel/PIT_Timer.h>
+#include <kernel/timer.h>
 #include <kernel/multitasking.h>
 #include <common/inline_assembly.h>
+#include <kernel/sleep.h>
 
 extern void jump_usermode();
 
@@ -31,9 +33,7 @@ void test_mt(){
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
       printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
-      if (bar == 2){
-	unblock_task(blocked_tasks, 0);
-      } else if (bar > 2) {
+      if (key.ascii_value == 'u'){
 	schedule();
       }
     }
@@ -73,9 +73,11 @@ void kernel_main(void) {
   create_kernel_task(&test_mt); //TID = 1
   create_kernel_task(&test_mt); // TID = 2
 
-  block_curr_task();
   
   //schedule();
+  //block_curr_task();
+  ms_sleep(100000);
+  
 
   printf("Returned!\n");
 

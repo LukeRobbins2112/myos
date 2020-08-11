@@ -3,11 +3,14 @@
 #include <kernel/multitasking.h>
 #include <kernel/kheap.h>
 #include <stdio.h>
+#include <common/inline_assembly.h>
 
 sleeping_task_t * sleep_queue_head = 0;
 sleeping_task_t * sleep_queue_tail = 0;
 
 void add_to_sleep_queue(sleeping_task_t* sleeper){
+  //breakpoint("add_to_sleep_queue");
+  
   // Empty list, just add the node
   if (!sleep_queue_head){
     sleeper->next = 0;
@@ -34,6 +37,9 @@ void add_to_sleep_queue(sleeping_task_t* sleeper){
 }
 
 void ms_sleep_until(uint64_t wake_time_ms){
+
+  //breakpoint("ms_sleep_until");
+  
   sleeping_task_t* new_sleeper = (sleeping_task_t*)kalloc(sizeof(sleeping_task_t), 0, kheap);
   if (!new_sleeper){
     printf("Failed to alloc memory for new sleeper!\n");
@@ -53,7 +59,9 @@ void ms_sleep_until(uint64_t wake_time_ms){
 }
 
 void ms_sleep(uint64_t sleep_duration){
-  uint64_t wake_time_ms = ms_since_boot() + sleep_duration;
+  uint64_t current_time = ms_since_boot();
+  uint64_t wake_time_ms = current_time + sleep_duration;
+  printf("Current time: %d -- Sleep until: %d\n", (uint32_t)current_time, (uint32_t)wake_time_ms);
   ms_sleep_until(wake_time_ms);
 }
 
@@ -66,6 +74,7 @@ void wake_sleeping_tasks(){
   // For all sleeping tasks, unblock them (no pre-empting), remove the node from the queue
   // Update sleep list, and de-allocate now-unused links
   while (sleep_queue_head && sleep_queue_head->wake_time <= time_millis){
+    printf("wake_sleeping_tasks at %d\n", time_millis);
     unblock_task(sleep_queue_head->task, 0);
     sleeping_task_t* to_delete = sleep_queue_head;
     sleep_queue_head = sleep_queue_head->next;
