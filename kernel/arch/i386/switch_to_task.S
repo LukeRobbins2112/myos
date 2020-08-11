@@ -11,11 +11,22 @@
 # address of "current" task control block
 .extern curr_tcb
 .extern context_tss
+.extern postpone_task_switches_counter
+.extern task_switches_postponed_flag	
 
 #  Caller must disable IRQs before calling, and enable after return	
 .globl switch_to_task_asm
 .type switch_to_task_asm, @function
 switch_to_task_asm:
+
+	# When there is a lock, skip the switch
+	movl postpone_task_switches_counter, %eax
+	testl %eax, %eax
+	je .unlocked
+	movl $1, task_switches_postponed_flag
+	ret
+
+.unlocked:	
 
 	# Save previous task's state
 	# %eax, %ecx, edx are caller saved;

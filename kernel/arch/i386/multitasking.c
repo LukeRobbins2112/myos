@@ -7,14 +7,33 @@
 #include <common/inline_assembly.h>
 #include <kernel/vmm.h>
 
-static uint32_t task_id_counter = 0;
+// ----------------------------------------
+// Lock Data
+// ------------------------------
 static uint32_t IRQ_disable_counter = 0;
+uint32_t postpone_task_switches_counter = 0;
+uint8_t task_switches_postponed_flag = 0;
+// -----------------------------------------
 
+// ------------------------------
+// Manage Running & Ready Tasks
+// ------------------------------
 tcb_t* curr_tcb = 0;
 tcb_t* task_list_head = 0;
 tcb_t* task_list_tail = 0;
+// ------------------------------
 
+// ------------------------------
+// Manage Blocked & Sleeping Tasks
+// ------------------------------
 tcb_t* blocked_tasks = 0;
+// ------------------------------
+
+// ------------------------------
+// Misc. Data
+// ------------------------------
+static uint32_t task_id_counter = 0;
+// ------------------------------
 
 // Declarations
 void append_ready_task(tcb_t* ready_task);
@@ -28,6 +47,36 @@ void lock_scheduler(){
 
 void unlock_scheduler(){
 #ifndef SMP
+  IRQ_disable_counter--;
+  if (IRQ_disable_counter == 0){
+    STI();
+  }
+#endif // #ifndef SMP
+}
+
+
+
+void lock_stuff(){
+#ifndef SMP
+  CLI();
+  IRQ_disable_counter++;
+  postpone_task_switches_counter++;
+#endif // #ifndef SMP
+}
+
+void unlock_stuff(){
+#ifndef SMP
+  postpone_task_switches_counter--;
+
+  // If there are no longer any locks...
+  if (postpone_task_switches_counter == 0){
+    // ...and a task switch has been delayed
+    if (task_switches_postponed_flag != 0){
+      task_switches_postponed_flag = 0;
+      switch_to_next_task();
+    }
+  }
+  
   IRQ_disable_counter--;
   if (IRQ_disable_counter == 0){
     STI();
@@ -176,6 +225,12 @@ void schedule(){
 }
 
 void switch_to_next_task(){
+  // If there are still outstanding locks, don't switch yet
+  if (postpone_task_switches_counter != 0){
+    task_switches_postponed_flag = 1;
+    return; 
+  }
+  
   tcb_t* next_task = get_next_task();
 
   // If no other tasks, nothing to do
