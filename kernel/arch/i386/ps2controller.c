@@ -52,7 +52,7 @@ uint8_t enable_scanning(uint8_t device){
   WAIT_FOR_READ();
   uint8_t ack = read_data_port();
   if (ack == 0xFA){
-    printf("Enable scan Acked\n");
+    //printf("Enable scan Acked\n");
   } else {
     printf("Enable scan reply: %x\n", ack);
   }
@@ -72,7 +72,7 @@ uint16_t identify_device(uint8_t device){
   WAIT_FOR_READ();
   uint8_t ack = read_data_port();
   if (ack == 0xFA){
-    printf("Disable scan Acked\n");
+    //printf("Disable scan Acked\n");
   } else {
     printf("Disable scan reply: %x\n", ack);
   }
@@ -84,7 +84,7 @@ uint16_t identify_device(uint8_t device){
   WAIT_FOR_READ();
   ack = read_data_port();
   if (ack != 0xFA){
-    printf("Err: Identify device ack was %x\n", ack);
+    //printf("Err: Identify device ack was %x\n", ack);
     return 0xFF; // Failure
   }
   
@@ -100,7 +100,7 @@ uint16_t identify_device(uint8_t device){
 
   enable_scanning(device);
   
-  printf("DeviceID: %x\n", deviceID);
+  // printf("DeviceID: %x\n", deviceID);
   return deviceID;
 }
 
@@ -125,7 +125,7 @@ void initialize_ps2_controller(){
   configByte &= ~(1 << 0);
   configByte &= ~(1 << 1);
   configByte &= ~(1 << 6);
-  printf("New Controller Config Byte: %d\n", configByte);
+  // printf("New Controller Config Byte: %d\n", configByte);
   write_command_register(WRITE_CONFIG_BYTE);
   write_data_port(configByte);
 
@@ -212,11 +212,11 @@ void initialize_ps2_controller(){
   cmd_dev_port(TYPE_RATE_DELAY, PORT_1_DEVICE);
   WAIT_FOR_READ();
   uint8_t response = read_data_port();
-  printf("Set typing cmd response: %x\n", response);
+  //printf("Set typing cmd response: %x\n", response);
   cmd_dev_port(0x7F, PORT_1_DEVICE);  // Slowest repeat rate / longest delay
   WAIT_FOR_READ();
   response = read_data_port();
-  printf("Set typing rates response: %x\n", response);
+  //printf("Set typing rates response: %x\n", response);
 
   // Unmask IRQ0 and IRQ1
   outb(PIC1_DATA, ~(0x3)); // mask = 1111 1101
