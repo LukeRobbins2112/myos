@@ -44,6 +44,10 @@ static inline void STI(void) {
   asm volatile("sti");
 }
 
+static inline void HLT(void) {
+  asm volatile("hlt");
+}
+
 static inline void INT(uint8_t interrupt) {
   asm volatile("int %0"
 	       : /* output */
