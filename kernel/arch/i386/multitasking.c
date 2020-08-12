@@ -42,6 +42,7 @@ void lock_scheduler(){
 #ifndef SMP
   CLI();
   IRQ_disable_counter++;
+  //printf("lock_scheduler(): IRQ_Disable_counter = %d\n", IRQ_disable_counter);
 #endif // #ifndef SMP
 }
 
@@ -51,6 +52,7 @@ void unlock_scheduler(){
   if (IRQ_disable_counter == 0){
     STI();
   }
+  //printf("unlock_scheduler(): IRQ_Disable_counter = %d\n", IRQ_disable_counter);
 #endif // #ifndef SMP
 }
 
@@ -61,6 +63,7 @@ void lock_stuff(){
   CLI();
   IRQ_disable_counter++;
   postpone_task_switches_counter++;
+  //printf("lock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d\n", IRQ_disable_counter, postpone_task_switches_counter);
 #endif // #ifndef SMP
 }
 
@@ -81,6 +84,7 @@ void unlock_stuff(){
   if (IRQ_disable_counter == 0){
     STI();
   }
+  //printf("unlock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
 #endif // #ifndef SMP
 }
 
@@ -195,7 +199,10 @@ void block_curr_task(){
 
 void unblock_task(tcb_t* task, uint8_t preempt){
   lock_scheduler();
-  if (!task_list_head || preempt){
+
+  // If we're not postponing, and if either:
+  // task_list is not null or we explicitly ask to preempt
+  if ((postpone_task_switches_counter == 0) && (!task_list_head || preempt)){
     // Only one task was running
     
     // Add current task to ready list

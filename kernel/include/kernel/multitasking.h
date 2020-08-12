@@ -25,11 +25,14 @@ void schedule();
 void block_curr_task();
 void unblock_task(tcb_t* task, uint8_t preempt);
 
+
 // ----------------------------------
 // Other Global Functions
 // ----------------------------------
 uint32_t get_task_id();
 tcb_t* get_current_task();
+void lock_scheduler();
 void unlock_scheduler();
-
+void lock_stuff();
+void unlock_stuff();
 #endif // _MULTITASKING_H

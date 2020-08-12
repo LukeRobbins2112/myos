@@ -40,6 +40,14 @@ void ms_sleep_until(uint64_t wake_time_ms){
 
   //breakpoint("ms_sleep_until");
   
+  // Make sure wakeup time has not occurred already
+  if (wake_time_ms < ms_since_boot()){
+    return;
+  }
+
+  // Grab scheduler lock, postpone any task switches during this time
+  lock_stuff();
+
   sleeping_task_t* new_sleeper = (sleeping_task_t*)kalloc(sizeof(sleeping_task_t), 0, kheap);
   if (!new_sleeper){
     printf("Failed to alloc memory for new sleeper!\n");
@@ -53,6 +61,9 @@ void ms_sleep_until(uint64_t wake_time_ms){
 
   // Append to queue
   add_to_sleep_queue(new_sleeper);
+
+  // Unlock the scheduler
+  unlock_stuff();
 
   // Block the task until it wakes
   block_curr_task();
@@ -71,6 +82,9 @@ void wake_sleeping_tasks(){
   // Get current time in millis
   uint64_t time_millis = ms_since_boot();
 
+  // Lock scheduler , prevent task switches
+  lock_stuff();
+
   // For all sleeping tasks, unblock them (no pre-empting), remove the node from the queue
   // Update sleep list, and de-allocate now-unused links
   while (sleep_queue_head && sleep_queue_head->wake_time <= time_millis){
@@ -80,4 +94,7 @@ void wake_sleeping_tasks(){
     sleep_queue_head = sleep_queue_head->next;
     kfree(to_delete, kheap);
   }
+
+  // Unlock schedule
+  unlock_stuff();
 }

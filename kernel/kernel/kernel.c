@@ -36,6 +36,9 @@ void test_mt(){
       if (key.ascii_value == 'u'){
 	schedule();
       }
+      if (key.ascii_value == 'w'){
+	wake_sleeping_tasks();
+      }
     }
   }
     
