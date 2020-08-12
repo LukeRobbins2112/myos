@@ -6,6 +6,7 @@
 #include <kernel/paging.h>
 #include <common/inline_assembly.h>
 #include <kernel/vmm.h>
+#include <kernel/timer.h>
 
 // ----------------------------------------
 // Lock Data
@@ -240,17 +241,49 @@ void switch_to_next_task(){
   
   tcb_t* next_task = get_next_task();
 
-  // If no other tasks, nothing to do
-  if (!next_task || (next_task == curr_tcb)){
-    return;
+  // If there is another task, switch to it
+  if (next_task){
+    // Update ready list head
+    task_list_head = next_task->next_task;
+    
+    // Switch to new task
+    next_task->state = TASK_RUNNING;
+    switch_to_task(next_task);
+  } else if (curr_tcb->state == TASK_RUNNING) {
+    // Keep running if no other tasks
+  } else {
+    // Current running task blocked, no other tasks --> idle
+    tcb_t* task = curr_tcb;
+    curr_tcb = 0; // NULL
+    //uint64_t idle_start_time = ms_since_boot(); // For power management
+
+    // Do nothing while waiting for a task to unblock & become ready
+    // This won't happen until we get an IRQ (e.g. sleeping task wakes)
+    // IRQs are disabled, but we have to enable them to break this loop
+    // Leave postponed_flag set b/c we want to stay here until we're done
+
+    do {
+      STI();
+      HLT();
+      CLI();
+    } while (task_list_head == 0);
+
+    // Give the task back
+    curr_tcb = task;
+
+    // Switch to the newly-unblocked task
+    // Unless that task was the one we borrowed here...
+    // .. in that case we're already on it; just return
+    
+    task = task_list_head;
+    task_list_head = task->next_task;
+    if (task != curr_tcb){
+      task->state = TASK_RUNNING;
+      switch_to_task(task);
+    }
   }
 
-  // Update ready list head
-  task_list_head = next_task->next_task;
 
-  // Switch to new task
-  next_task->state = TASK_RUNNING;
-  switch_to_task(next_task);
 }
 
 extern void switch_to_task_asm(tcb_t* new_task); // Assembly function
