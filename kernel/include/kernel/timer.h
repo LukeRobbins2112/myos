@@ -11,8 +11,15 @@ extern uint64_t tick;
 
 // @TODO add HPET, Used for high resolution
 
+
+enum TimerType {
+    PIT_TIMER = 0,
+    HPET_TIMER = 1,
+};
+
 void clock_tick();
 uint64_t ticks_since_boot();
 uint64_t ms_since_boot();
+uint64_t ms_per_tick();
 
 #endif // TIMER_H
