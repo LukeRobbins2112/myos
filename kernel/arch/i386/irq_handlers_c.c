@@ -7,6 +7,7 @@
 #include "kernel/keyboard.h"
 #include "kernel/timer.h"
 #include "kernel/sleep.h"
+#include "kernel/multitasking.h"
 
 #define PIC_EOI		0x20		/* End-of-interrupt command code */
 
@@ -25,8 +26,14 @@ void irq0_handler(void) {
   // Increment  timer
   clock_tick();
 
+  // Lock scheduler locks
+  lock_stuff();
+
   // Now perform handler code / timer updates
   wake_sleeping_tasks();
+
+  // Unlock scheduler
+  unlock_stuff();
     
   // Send EOI, we got what we needed from the interrupt
   PIC_sendEOI(0);
