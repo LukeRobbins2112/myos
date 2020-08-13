@@ -9,7 +9,19 @@
 #include "kernel/sleep.h"
 #include "kernel/multitasking.h"
 
+// --------------------------------------------------
+// Constants
+// --------------------------------------------------
 #define PIC_EOI		0x20		/* End-of-interrupt command code */
+
+// --------------------------------------------------
+
+// --------------------------------------------------
+// Data
+// --------------------------------------------------
+uint64_t time_slice_remaining = TIME_SLICE_LENGTH_MS;
+
+// --------------------------------------------------
 
 
 static void PIC_sendEOI(unsigned char irq)
@@ -26,12 +38,26 @@ void irq0_handler(void) {
   // Increment  timer
   clock_tick();
 
+  // @TODO double-wrapping wake_sleeping_tasks - might want to...
+  // ... only have these locks in called functions
   // Lock scheduler locks
   lock_stuff();
 
   // Now perform handler code / timer updates
   wake_sleeping_tasks();
 
+  // Handle end-of-time-slice
+  // For safety, make sure we didn't wrap around the unsigned int
+  if (time_slice_remaining == 0 || time_slice_remaining > TIME_SLICE_LENGTH_MS){
+    printf("Task switch - time = %d\n", time_slice_remaining);
+
+    time_slice_remaining = TIME_SLICE_LENGTH_MS;
+    //switch_to_next_task();
+    schedule();
+  } else {
+    time_slice_remaining -= ms_per_tick();
+  }
+  
   // Unlock scheduler
   unlock_stuff();
     
@@ -41,6 +67,7 @@ void irq0_handler(void) {
 }
  
 void irq1_handler(void) {
+  //breakpoint("irq1");
   uint8_t input = inb(0x60);
   PIC_sendEOI(1);
   process_scan_code(input);

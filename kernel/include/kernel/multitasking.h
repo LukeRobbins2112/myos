@@ -3,6 +3,12 @@
 
 #include <kernel/task_control_block.h>
 
+// -----------------------------------------
+// Constants
+// -----------------------------------------
+
+#define TIME_SLICE_LENGTH_MS 100000 // 5 seconds (!)
+
 // -----------------
 // Data
 // -----------------
@@ -22,6 +28,7 @@ tcb_t* create_kernel_task(void (*entry_EIP)());
 void switch_to_task(tcb_t* new_task);
 void switch_to_next_task();
 void schedule();
+void schedule_under_lock();
 void block_curr_task();
 void unblock_task(tcb_t* task, uint8_t preempt);
 
@@ -35,4 +42,5 @@ void lock_scheduler();
 void unlock_scheduler();
 void lock_stuff();
 void unlock_stuff();
+void dump_lock_info();
 #endif // _MULTITASKING_H

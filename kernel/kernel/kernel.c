@@ -23,9 +23,13 @@ void do_something_else(){
 }
 
 void test_mt(){
-  printf("Made it to new task!\n");
+  printf("Made it to new task %d!\n", get_task_id());
+  //breakpoint("test_mt");
 
   unlock_scheduler();
+  dump_lock_info();
+
+  INT(33);
 
   int bar = 0;
   while(1){
@@ -34,16 +38,16 @@ void test_mt(){
     if (pop_key_event(&key) && !key.rel_if_set){
       printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
       if (key.ascii_value == 'u'){
-	schedule();
+	//schedule();
       }
       if (key.ascii_value == 'w'){
-	wake_sleeping_tasks();
+	//wake_sleeping_tasks();
       }
     }
   }
     
 }
- 
+
 void kernel_main(void) {
 
   // Setup GDT and TSS
@@ -79,7 +83,8 @@ void kernel_main(void) {
   
   //schedule();
   //block_curr_task();
-  ms_sleep(100000);
+  //ms_sleep(100000);
+  //schedule_under_lock();
   
 
   printf("Returned!\n");
@@ -94,7 +99,7 @@ void kernel_main(void) {
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
       printf("Foo(%d): %d - %c\n", get_task_id(), foo++, key.ascii_value);
-      schedule();
+      //schedule();
     }
   }
 }

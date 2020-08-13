@@ -77,8 +77,10 @@ void unlock_stuff(){
     // ...and a task switch has been delayed
     if (task_switches_postponed_flag != 0){
       task_switches_postponed_flag = 0;
-      breakpoint("unlock_stuff() switching");
-      switch_to_next_task();
+      //breakpoint("unlock_stuff() switching");
+      printf("unlock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
+      //unlock_scheduler();
+      schedule();
     }
   }
   
@@ -90,6 +92,10 @@ void unlock_stuff(){
 #endif // #ifndef SMP
 }
 
+
+void dump_lock_info(){
+printf("Lock Info: IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
+}
 
 // ---------------------------------
 // Main Multiaskings & Scheduling API
@@ -222,14 +228,18 @@ void unblock_task(tcb_t* task, uint8_t preempt){
 }
 
 void schedule(){
-  lock_scheduler();
-
+  //breakpoint("schedule");
   // Add current task to ready list
   append_ready_task(curr_tcb);
   curr_tcb->state = TASK_READY;
 
   // Pop new task off of ready list, switch to it
   switch_to_next_task();
+}
+
+void schedule_under_lock(){
+  lock_scheduler();
+  schedule();
   unlock_scheduler();
 }
 
@@ -244,6 +254,7 @@ void switch_to_next_task(){
 
   // If there is another task, switch to it
   if (next_task){
+    //breakpoint("there is a next task");
     // Update ready list head
     task_list_head = next_task->next_task;
     
@@ -252,7 +263,9 @@ void switch_to_next_task(){
     switch_to_task(next_task);
   } else if (curr_tcb->state == TASK_RUNNING) {
     // Keep running if no other tasks
+    printf("No more tasks\n");
   } else {
+    printf("No more tasks\n");
     // Current running task blocked, no other tasks --> idle
     tcb_t* task = curr_tcb;
     curr_tcb = 0; // NULL
@@ -263,6 +276,7 @@ void switch_to_next_task(){
     // IRQs are disabled, but we have to enable them to break this loop
     // Leave postponed_flag set b/c we want to stay here until we're done
 
+    breakpoint("NO MORE TASKS");
     do {
       STI();
       HLT();
