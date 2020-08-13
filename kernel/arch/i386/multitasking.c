@@ -77,6 +77,7 @@ void unlock_stuff(){
     // ...and a task switch has been delayed
     if (task_switches_postponed_flag != 0){
       task_switches_postponed_flag = 0;
+      breakpoint("unlock_stuff() switching");
       switch_to_next_task();
     }
   }
@@ -288,5 +289,10 @@ void switch_to_next_task(){
 
 extern void switch_to_task_asm(tcb_t* new_task); // Assembly function
 void switch_to_task(tcb_t* new_task){
+  if (postpone_task_switches_counter != 0) {
+    task_switches_postponed_flag = 1;
+    return;
+  }
+
   switch_to_task_asm(new_task);
 }
