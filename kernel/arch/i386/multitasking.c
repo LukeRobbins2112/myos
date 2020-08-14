@@ -36,8 +36,12 @@ tcb_t* blocked_tasks = 0;
 static uint32_t task_id_counter = 0;
 // ------------------------------
 
+// ------------------------------
 // Declarations
+// ------------------------------
 void append_ready_task(tcb_t* ready_task);
+void setup_new_task(void (*entry_EIP)());
+// ------------------------------
 
 void lock_scheduler(){
 #ifndef SMP
@@ -126,6 +130,7 @@ void initialize_multitasking(){
   // First tcb is running, no need to add to ready queue
 }
 
+extern void setup_new_task_asm();
 tcb_t* create_kernel_task(void (*entry_EIP)()){
   tcb_t* new_tcb = (tcb_t*)kalloc(sizeof(tcb_t), 0, kheap);
   if (!new_tcb){
@@ -141,15 +146,17 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   // Space for registers we pop off the stack
   // Pop order: ebp, edi, esi, ebx, eip
   // For a new task, these registers should just be zero
-  // eip should be the function pointer to the process entry point
-  uint32_t initial_stack_size = (5 * 4);
+  // Then eip is pushed as argument to the task setup function
+  // Top value should be the function pointer to the task setup function
+  uint32_t initial_stack_size = (6 * 4);
 
   // Clean out the new stack to zero space for soon to be popped regs
   // We'll then set the eip separately
-  // Note the pointer arithmetic: (proc_stack-5) = proc_stack - (5 * 4bytes)
-  memset((uint32_t*)stack_bottom - 5, 0x0, initial_stack_size);
+  // Note the pointer arithmetic: (proc_stack-6) = proc_stack - (6 * 4bytes)
+  memset((uint32_t*)stack_bottom - 6, 0x0, initial_stack_size);
 
   // Set the EIP for the new process
+  (*((uint32_t*)stack_bottom - 2)) = (uint32_t)(&setup_new_task_asm);
   (*((uint32_t*)stack_bottom - 1)) = (uint32_t)entry_EIP;
 
   // @TODO initialize this w/ function for new Page Directory
@@ -165,6 +172,14 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
   append_ready_task(new_tcb);
 
   return new_tcb;
+}
+
+// This is the entry point into a new task; it performs any...
+// ...setup and other housekeeping before launching client code
+void setup_new_task(void (*entry_EIP)()){
+  unlock_scheduler();
+  dump_lock_info();
+  entry_EIP();
 }
 
 tcb_t* get_current_task(){

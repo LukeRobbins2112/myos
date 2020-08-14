@@ -12,6 +12,9 @@
 .extern curr_tcb
 .extern context_tss
 
+# task initialization
+.extern setup_new_task
+	
 #  Caller must disable IRQs before calling, and enable after return	
 .globl switch_to_task_asm
 .type switch_to_task_asm, @function
@@ -61,3 +64,15 @@ switch_to_task_asm:
 	popl %ebx
 
 	ret
+
+
+# setup new task
+.globl setup_new_task_asm
+.type setup_new_task_asm, @function
+setup_new_task_asm:
+	# we do not CALL this function, we RETURN to it
+	# when we begin the function, entry_EIP is already pushed onto the stack
+	# just call the actual setup helper
+	call setup_new_task
+	
+	

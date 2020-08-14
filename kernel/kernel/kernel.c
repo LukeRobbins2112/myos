@@ -25,9 +25,6 @@ void do_something_else(){
 void test_mt(){
   printf("Made it to new task %d!\n", get_task_id());
 
-  unlock_scheduler();
-  dump_lock_info();
-
   int bar = 0;
   while(1){
     // infinite loop
