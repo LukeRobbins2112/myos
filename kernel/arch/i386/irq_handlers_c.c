@@ -57,13 +57,13 @@ void irq0_handler(void) {
   } else {
     time_slice_remaining -= ms_per_tick();
   }
+
+  // Send EOI, we got what we needed from the interrupt
+  // Need to do this before unlock_stuff in case it switches task
+  PIC_sendEOI(0);
   
   // Unlock scheduler
-  unlock_stuff();
-    
-  // Send EOI, we got what we needed from the interrupt
-  PIC_sendEOI(0);
-
+  unlock_stuff();    
 }
  
 void irq1_handler(void) {

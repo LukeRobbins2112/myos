@@ -24,12 +24,9 @@ void do_something_else(){
 
 void test_mt(){
   printf("Made it to new task %d!\n", get_task_id());
-  //breakpoint("test_mt");
 
   unlock_scheduler();
   dump_lock_info();
-
-  INT(33);
 
   int bar = 0;
   while(1){
