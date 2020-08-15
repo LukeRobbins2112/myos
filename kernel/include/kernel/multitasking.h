@@ -18,6 +18,7 @@ extern tcb_t* task_list_head;
 extern tcb_t* task_list_tail;
 
 extern tcb_t* blocked_tasks;
+extern tcb_t* terminated_tasks;
 
 // ----------------------------------
 // Main Multitasking API
@@ -31,7 +32,7 @@ void schedule();
 void schedule_under_lock();
 void block_curr_task();
 void unblock_task(tcb_t* task, uint8_t preempt);
-
+void terminate_task();
 
 // ----------------------------------
 // Other Global Functions
@@ -43,4 +44,6 @@ void unlock_scheduler();
 void lock_stuff();
 void unlock_stuff();
 void dump_lock_info();
+void create_cleanup_task();
+
 #endif // _MULTITASKING_H

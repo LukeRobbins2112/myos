@@ -28,6 +28,8 @@ tcb_t* task_list_tail = 0;
 // Manage Blocked & Sleeping Tasks
 // ------------------------------
 tcb_t* blocked_tasks = 0;
+tcb_t* terminated_tasks = 0;
+tcb_t* cleanup_task = 0;
 // ------------------------------
 
 // ------------------------------
@@ -37,10 +39,12 @@ static uint32_t task_id_counter = 0;
 // ------------------------------
 
 // ------------------------------
-// Declarations
+// Local Function Fwd Declarations
 // ------------------------------
 void append_ready_task(tcb_t* ready_task);
 void setup_new_task(void (*entry_EIP)());
+void cleanup_term_tasks();
+void cleanup_terminated_task(tcb_t* task);
 // ------------------------------
 
 void lock_scheduler(){
@@ -81,10 +85,8 @@ void unlock_stuff(){
     // ...and a task switch has been delayed
     if (task_switches_postponed_flag != 0){
       task_switches_postponed_flag = 0;
-      //breakpoint("unlock_stuff() switching");
-      printf("unlock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
-      //unlock_scheduler();
-      schedule();
+      //printf("unlock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
+      switch_to_next_task();
     }
   }
   
@@ -98,7 +100,7 @@ void unlock_stuff(){
 
 
 void dump_lock_info(){
-printf("Lock Info: IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
+  printf("Lock Info (task %d): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", curr_tcb->task_id, IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
 }
 
 // ---------------------------------
@@ -215,7 +217,7 @@ tcb_t* get_next_task(){
 
 void block_curr_task(){
   lock_scheduler();
-  blocked_tasks = curr_tcb;
+  printf("blocking task %d\n", curr_tcb->task_id);
   switch_to_next_task();
   unlock_scheduler();
 }
@@ -243,7 +245,6 @@ void unblock_task(tcb_t* task, uint8_t preempt){
 }
 
 void schedule(){
-  //breakpoint("schedule");
   // Add current task to ready list
   append_ready_task(curr_tcb);
   curr_tcb->state = TASK_READY;
@@ -269,7 +270,6 @@ void switch_to_next_task(){
 
   // If there is another task, switch to it
   if (next_task){
-    //breakpoint("there is a next task");
     // Update ready list head
     task_list_head = next_task->next_task;
     
@@ -324,4 +324,66 @@ void switch_to_task(tcb_t* new_task){
   }
 
   switch_to_task_asm(new_task);
+}
+
+void terminate_task(){
+  // Perform any userspace-related cleanup
+  //...
+
+  // Lock the scheduler, delay task switches
+  lock_stuff();
+
+  // Add to terminated tasks list
+  lock_scheduler();
+  curr_tcb->next_task = terminated_tasks;
+  terminated_tasks = curr_tcb;
+  unlock_scheduler();
+
+  // Block this task (task switch will occur after unlock
+  curr_tcb->state = TASK_TERMINATED;
+  block_curr_task();
+
+  // Now unblock the cleaner task
+  unblock_task(cleanup_task, 0);
+
+  // Unlock the scheduler
+  unlock_stuff();
+}
+
+void create_cleanup_task(){
+  cleanup_task = create_kernel_task(&cleanup_term_tasks);
+}
+
+void cleanup_term_tasks(){
+
+  tcb_t* task;
+
+  // Loop forever, periodically blocking and unblocking
+  while(1){
+
+    // lock scheduler
+    lock_stuff();
+
+    while (terminated_tasks){
+      task = terminated_tasks;
+      printf("Killing task %d\n", task->task_id);
+      terminated_tasks = terminated_tasks->next_task;
+      cleanup_terminated_task(task);
+    }
+
+    // Block cleanup task until we need it again
+    curr_tcb->state = TASK_BLOCKED;
+    block_curr_task();
+
+    // Unlock the scheduler
+    unlock_stuff();
+  }
+}
+
+void cleanup_terminated_task(tcb_t* task){
+  // Cleanup the task stack
+  kfree((void*)task->esp0, kheap);
+
+  // Cleanup the task structure
+  kfree(task, kheap);
 }

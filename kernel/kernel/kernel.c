@@ -37,6 +37,9 @@ void test_mt(){
       if (key.ascii_value == 'w'){
 	//wake_sleeping_tasks();
       }
+      if (key.ascii_value == 'w'){
+	terminate_task();
+      }
     }
   }
     
@@ -71,6 +74,7 @@ void kernel_main(void) {
 
   // Multitasking
   initialize_multitasking();
+  create_cleanup_task();
   create_kernel_task(&test_mt); //TID = 1
   create_kernel_task(&test_mt); // TID = 2
 

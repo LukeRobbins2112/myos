@@ -4,10 +4,11 @@
 #include <stdint.h>
 
 typedef enum task_state {
- TASK_STOPPED = 0,
- TASK_RUNNING = 1,
- TASK_READY   = 2,
- TASK_BLOCKED = 3, 
+ TASK_STOPPED    = 0,
+ TASK_RUNNING    = 1,
+ TASK_READY      = 2,
+ TASK_BLOCKED    = 3,
+ TASK_TERMINATED = 4
 } TASK_STATE;
 
 typedef struct TCB {
