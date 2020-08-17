@@ -43,8 +43,7 @@ void* NEXT_BLOCK(void* ptr){
   void* next_block = (void*)((uint32_t)ptr + GET_SIZE(ptr) + FTR_SIZE + HDR_SIZE);
 
   if ((uint32_t)next_block > kheap->heap_end){
-    printf("ERROR: NEXT_BLOCK is beyond heap end\n");
-    return 0x0;
+    printf("WARNING: NEXT_BLOCK %x is beyond heap end\n", (uint32_t)next_block);
   }
 
   return next_block;
@@ -125,6 +124,14 @@ void REMOVE_FROM_FREELIST(freelist_data_t* free_links){
   }
 }
 
+uint32_t GET_HEAP_SIZE(){
+  if (!kheap){
+    return 0;
+  }
+
+  return (kheap->heap_end - kheap->heap_start);
+}
+
 // -----------------------
 // Main Functionality
 // -----------------------
@@ -153,7 +160,7 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags){
   new_heap->heap_start = start_addr;
   new_heap->prog_break = start_addr;
   new_heap->heap_end = start_addr + size;
-  new_heap->max_size = 0x1000000;
+  new_heap->max_size = 0x10000000;
   new_heap->flags = flags;
 
   // Pointer is always to the block of mem itself, not the header
@@ -168,10 +175,31 @@ heap_t* create_heap(uint32_t start_addr, uint32_t size, uint8_t flags){
   return new_heap;
 }
 
+void extend_heap(){
+  
+    // If we have room, treat the next 4k block as an existing used
+    // block and "free it". If there is a free block at the end of the
+    // current heap, they will coalesce; otherwise the new 4k page will
+    // just be added at the end of the linked list
+    // This should page fault but then return here
+
+    // Get pointer to next page, set as as one "used" block
+    void* new_mem = GET_DATA((header_t*)kheap->heap_end);
+    SET_HDR(new_mem, DATA_SIZE(PAGE_SIZE), USED_FLAG);
+
+    // Now free that block as if it were part of the heap
+    // It is contiguous w/ the existing heap, so this should coalesce
+    // if the last block in the heap is free
+    kfree(new_mem, kheap);
+
+    // Update heap end
+    kheap->heap_end += PAGE_SIZE;
+}
+
 void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
   if (0 == size){
-    printf("ERROR: Cannot call kalloc with 0 size\n");
+    printf("WARNING: Do not call kalloc with 0 size; defaults to 8 bytes\n");
   }
 
   // Dynamic allocation should be at least 8-bytes
@@ -184,8 +212,18 @@ void* kalloc(uint32_t size, uint16_t align, heap_t* heap){
 
   // If we reach the end of the list w/o finding a block
   if (!free_itr){
-    printf("ERROR: Could not find free block\n");
-    return (void*)0x0;
+
+    // If we have no more room, fail alloc and return 0
+    if ( (GET_HEAP_SIZE() + PAGE_SIZE) > kheap->max_size){
+      printf("Cannot extend heap; size requested is larger than max\n");
+      return 0x0;
+    }
+
+    extend_heap();
+
+    // Now we extended the heap, recurse to try again
+    // This works even for 4K+ chunks, it will repeatedly re-alloc
+    return kalloc(size, align, heap);
   }
 
   // Get data ptr
@@ -264,7 +302,7 @@ uint8_t coalesce(void* ptr){
   // If we're at the end of the heap, don't coalesce right --
   // return result of coalesce left
   void* next_ptr = NEXT_BLOCK(ptr);
-  if (!next_ptr){
+  if (!next_ptr || ((uint32_t)next_ptr >= kheap->heap_end)){
     return performed_coalesce;
   }
   header_t* next_hdr = GET_HDR(next_ptr);
@@ -706,12 +744,60 @@ void TEST_coalesce(){
   clear_heap(8675309);
 }
 
+void TEST_multiple_page_heap(){
+  // Make sure we have a fresh heap
+  clear_heap(8675309);
+
+
+  // Shared comparison data
+  uint32_t initial_heap_size = kheap->heap_end - kheap->heap_start;
+  uint32_t base_addr = (uint32_t)GET_DATA(&kheap->freelist_head->header);
+
+  // (---0---) Check initial state of the freelist
+  header_t* freelist_head0 = &(kheap->freelist_head->header);
+  freelist_data_t* free_links0 = &(kheap->freelist_head->freelist_data);
+  uint32_t header_size_field0 = freelist_head0->size; // Free block, low bit unset
+  ASSERT_EQ((uint32_t)freelist_head0, kheap->heap_start);
+  ASSERT_EQ(DATA_SIZE(initial_heap_size), header_size_field0);
+  ASSERT_EQ(free_links0->next, 0x0);
+  ASSERT_EQ(free_links0->prev, 0x0);
+  ASSERT_EQ(count_free_blocks(kheap), 1);
+
+  // (--1--) Alloc block that extends into next page
+
+  // Start by allocating three 1K chunks
+  for (int i = 0; i < 3; i++){
+    kalloc(1024, 0, kheap);
+  }
+
+  // Now allocate a 2K chunk (extending into next page)
+  void* ptr = kalloc(2048, 0, kheap);
+
+  // Allocation should have worked
+  uint32_t ptr_addr = (uint32_t)ptr;
+  uint32_t expected_addr = base_addr + (3*TOTAL_BLK_SIZE(1024));
+  ASSERT_EQ(ptr_addr, expected_addr);
+
+  // Next block should be 3K free block
+  void* next_ptr = NEXT_BLOCK(ptr);
+  header_t* next_hdr = GET_HDR(next_ptr);
+  ASSERT_EQ(IS_FREE(next_hdr), 1);
+  ASSERT_EQ(GET_SIZE(next_ptr), 0xBB0);
+  
+  
+  // End test and leave the heap clean when we're done
+  END_TEST(TEST_multi_page_heap);
+  clear_heap(8675309);
+}
+
 void TEST_kheap(){
 
   TEST_alloc();
   TEST_free();
   TEST_freelist();
   TEST_coalesce();
+  TEST_multiple_page_heap();
+
 
   // Clear heap at the end, just in case
   clear_heap(8675309);
