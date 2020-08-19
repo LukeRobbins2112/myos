@@ -49,7 +49,7 @@ void irq0_handler(void) {
   // Handle end-of-time-slice
   // For safety, make sure we didn't wrap around the unsigned int
   if (time_slice_remaining == 0 || time_slice_remaining > TIME_SLICE_LENGTH_MS){
-    printf("Task switch - time = %d\n", time_slice_remaining);
+    //printf("Task switch - time = %d\n", time_slice_remaining);
 
     time_slice_remaining = TIME_SLICE_LENGTH_MS;
     //switch_to_next_task();

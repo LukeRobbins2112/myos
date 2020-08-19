@@ -100,7 +100,7 @@ void unlock_stuff(){
 
 
 void dump_lock_info(){
-  printf("Lock Info (task %d): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", curr_tcb->task_id, IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
+  //printf("Lock Info (task %d): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", curr_tcb->task_id, IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
 }
 
 // ---------------------------------
