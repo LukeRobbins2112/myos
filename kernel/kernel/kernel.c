@@ -23,14 +23,13 @@ void do_something_else(){
 }
 
 void test_mt(){
-  printf("Made it to new task %d!\n", get_task_id());
+  //printf("Made it to new task %d!\n", get_task_id());
 
   int bar = 0;
   while(1){
     // infinite loop
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
-      printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
       if (key.ascii_value == 'u'){
 	//schedule();
       }
@@ -39,6 +38,18 @@ void test_mt(){
       }
       if (key.ascii_value == 'w'){
 	terminate_task();
+      }
+      if (key.ascii_value == 'p'){
+	printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
+      }
+      if (key.ascii_value == 'l'){
+	print_last_line();
+      }
+      if (key.special_key && key.key_code == UP_ARROW){
+	scroll_up();
+      }
+      if (key.special_key && key.key_code == DOWN_ARROW){
+	scroll_down();
       }
     }
   }
@@ -96,8 +107,27 @@ void kernel_main(void) {
     // infinite loop
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
-      printf("Foo(%d): %d - %c\n", get_task_id(), foo++, key.ascii_value);
-      //schedule();
+      if (key.ascii_value == 'u'){
+	//schedule();
+      }
+      if (key.ascii_value == 'w'){
+	//wake_sleeping_tasks();
+      }
+      if (key.ascii_value == 'w'){
+	terminate_task();
+      }
+      if (key.ascii_value == 'p'){
+	printf("Foo(%d): %d - %c\n", get_task_id(), foo++, key.ascii_value);
+      }
+      if (key.ascii_value == 'l'){
+	print_last_line();
+      }
+      if (key.special_key && key.key_code == UP_ARROW){
+	scroll_up();
+      }
+      if (key.special_key && key.key_code == DOWN_ARROW){
+	scroll_down();
+      }
     }
   }
 }

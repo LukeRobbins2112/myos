@@ -33,10 +33,11 @@ enum KeyState{
 typedef struct KeyInput {
   char ascii_value;
   char key_code;
+  char special_key : 1;
   char scroll_lock : 1;
   char num_lock    : 1;
   char caps_lock   : 1;
-  char reserved    : 5;
+  char reserved    : 4;
   char left_shift  : 1;
   char right_shift : 1;
   char left_alt    : 1;
@@ -50,6 +51,7 @@ typedef struct KeyInput {
 
 typedef struct Keyboardstate {
   char break_code;
+  char special_key;
   char shift_pressed;
   char alt_pressed;
   char ctrl_pressed;
@@ -67,4 +69,15 @@ extern unsigned char scancode_tables[][256u];
 void process_scan_code(uint8_t scan_code);
 uint8_t pop_key_event(key_input_t* dest);
 void initialize_keyboard_state();
+
+
+// ----------------------------
+// Special Key Values
+// ----------------------------
+
+#define DOWN_ARROW 0x72
+#define UP_ARROW   0x75
+
+
+
 #endif

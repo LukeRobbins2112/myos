@@ -20,11 +20,12 @@ static uint16_t* terminal_buffer;
 #define HIST_BUF_SIZE 128
 static uint16_t hist_buffer[HIST_BUF_SIZE][VGA_WIDTH];
 static uint32_t hist_buf_index = 0;
+static uint32_t term_offset = 0;
 static uint32_t term_first_line = 0;
 static uint32_t term_last_line = VGA_HEIGHT-1;
 
 void scroll_down(){
-  if (terminal_row < VGA_HEIGHT){
+  if ((term_offset+VGA_HEIGHT) == HIST_BUF_SIZE){
     return;
   }
 
@@ -32,22 +33,35 @@ void scroll_down(){
     return;
   }
 
-  uint32_t vga_buf_idx = terminal_row*VGA_WIDTH + terminal_column;
+  // uint32_t vga_buf_idx = terminal_row*VGA_WIDTH + terminal_column;
   //memcpy(hist_buffer[hist_buf_index++], &terminal_buffer[vga_buf_idx], VGA_WIDTH*sizeof(uint16_t));
 
   // Move all the lines up one
-  for (size_t y = 0; y < VGA_HEIGHT-1; y++) {
-    memcpy(&terminal_buffer[y*VGA_WIDTH], &terminal_buffer[(y+1)*VGA_WIDTH], VGA_WIDTH*sizeof(uint16_t));
-  }
-
-  // Clear the last line
-  for (size_t x = 0; x < VGA_WIDTH; x++) {
-    const size_t index = (VGA_HEIGHT-1) * VGA_WIDTH + x;
-    terminal_buffer[index] = vga_entry(' ', terminal_color);
+  for (size_t y = 0; y < VGA_HEIGHT; y++) {
+    //memcpy(&terminal_buffer[y*VGA_WIDTH], &terminal_buffer[(y+1)*VGA_WIDTH], VGA_WIDTH*sizeof(uint16_t));
+    memcpy(&terminal_buffer[y*VGA_WIDTH], hist_buffer[(term_offset+y+1)], VGA_WIDTH*sizeof(uint16_t));
   }
 
   // Set terminal row to the last row
   terminal_row = VGA_HEIGHT - 1;
+
+  // Increment the terminal offset in the hist_buffer
+  if ((term_offset + VGA_HEIGHT) < HIST_BUF_SIZE){
+    term_offset++;
+  }
+}
+
+void scroll_up(){
+  if (term_offset == 0){
+    return;
+  }
+
+  for (size_t y = 0; y < VGA_HEIGHT; y++) {
+    memcpy(&terminal_buffer[y*VGA_WIDTH], hist_buffer[(term_offset+y-1)], VGA_WIDTH*sizeof(uint16_t));
+  }
+
+  // Update the terminal offset in the hist_buffer
+  term_offset--;
 }
  
 void terminal_initialize(void) {
@@ -77,6 +91,7 @@ void terminal_putentryat(unsigned char c, uint8_t color, size_t x, size_t y) {
   /* } */
   
   terminal_buffer[index] = vga_entry(c, color);
+  hist_buffer[term_offset+y][x] = vga_entry(c, color);
 }
  
 void terminal_putchar(char c) {
@@ -85,6 +100,11 @@ void terminal_putchar(char c) {
   // If we're at the last row, increment the terminal to show it
   if (terminal_row == VGA_HEIGHT){
     scroll_down();
+    // Clear the last line
+    for (size_t x = 0; x < VGA_WIDTH; x++) {
+      const size_t index = (VGA_HEIGHT-1) * VGA_WIDTH + x;
+      terminal_buffer[index] = vga_entry(' ', terminal_color);
+    }
   }
   
   // For newline, don't print, just move to next row
@@ -111,4 +131,11 @@ void terminal_write(const char* data, size_t size) {
 
 void terminal_writestring(const char* data) {
   terminal_write(data, strlen(data));
+}
+
+void print_last_line(){
+  uint16_t* line = hist_buffer[term_offset-1];
+  for (int i = 0; i < VGA_WIDTH; i++){
+    terminal_putchar((char)line[i]);
+  }
 }

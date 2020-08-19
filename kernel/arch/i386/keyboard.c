@@ -38,6 +38,7 @@ unsigned char scancode_tables[][256u] =
 
 static keyboard_state_t Keyboard_State = {
   .break_code = 0,
+  .special_key = 0,
   .shift_pressed = 0,
   .alt_pressed = 0,
   .ctrl_pressed = 0,
@@ -106,6 +107,12 @@ void process_scan_code(uint8_t scan_code){
       Keyboard_State.break_code = 1;
       return;
     }
+
+  case EXTRAS_PREFIX:
+    {
+      Keyboard_State.special_key = 1;
+      return;
+    }
     
   case LEFT_SHIFT:
   case RIGHT_SHIFT:
@@ -144,8 +151,9 @@ void process_scan_code(uint8_t scan_code){
     {
       key_input_t newKeyInput;
       uint8_t table = (Keyboard_State.shift_pressed || Keyboard_State.caps_lock) ? 1 : 0;
-      newKeyInput.ascii_value = scancode_tables[table][scan_code];
+      newKeyInput.ascii_value = (Keyboard_State.special_key) ? '\0' : scancode_tables[table][scan_code];
       newKeyInput.key_code = scan_code;
+      newKeyInput.special_key = Keyboard_State.special_key;
       newKeyInput.scroll_lock = 0; // @TODO implement this
       newKeyInput.num_lock = 0; // @TODO implement this
       newKeyInput.caps_lock = Keyboard_State.caps_lock;
