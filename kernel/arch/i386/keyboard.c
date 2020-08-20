@@ -169,6 +169,7 @@ void process_scan_code(uint8_t scan_code){
 
       push_key_event(newKeyInput);
       Keyboard_State.break_code = 0;
+      Keyboard_State.special_key = 0;
     }
 
   }
