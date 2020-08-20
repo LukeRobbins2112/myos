@@ -34,10 +34,11 @@ void test_mt(){
 	//schedule();
       }
       if (key.ascii_value == 'w'){
+	breakpoint("Test");
 	//wake_sleeping_tasks();
       }
       if (key.ascii_value == 'w'){
-	terminate_task();
+	//terminate_task();
       }
       if (key.ascii_value == 'p'){
 	printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);
@@ -114,7 +115,7 @@ void kernel_main(void) {
 	//wake_sleeping_tasks();
       }
       if (key.ascii_value == 'w'){
-	terminate_task();
+	//terminate_task();
       }
       if (key.ascii_value == 'p'){
 	printf("Foo(%d): %d - %c\n", get_task_id(), foo++, key.ascii_value);
