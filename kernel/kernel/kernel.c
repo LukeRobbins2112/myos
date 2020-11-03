@@ -87,8 +87,10 @@ void kernel_main(void) {
   // Multitasking
   initialize_multitasking();
   create_cleanup_task();
-  create_kernel_task(&test_mt); //TID = 1
-  create_kernel_task(&test_mt); // TID = 2
+  for (int i = 0; i < 16; i++){
+    create_kernel_task(&test_mt); // TID = 8
+  }
+  
 
   
   //schedule();
