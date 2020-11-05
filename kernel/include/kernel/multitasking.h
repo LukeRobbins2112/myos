@@ -13,8 +13,8 @@
 // Data
 // -----------------
 
-extern tcb_t* curr_tcb;
-extern tcb_t* task_list_head;
+extern tcb_t* curr_tcb;        // "Running" TCB
+extern tcb_t* task_list_head; 
 extern tcb_t* task_list_tail;
 
 extern tcb_t* blocked_tasks;

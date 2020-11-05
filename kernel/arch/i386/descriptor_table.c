@@ -16,7 +16,7 @@ static void init_gdt();
 static void gdt_set_gate(int32_t idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 static void gdt_set_tss_gate(int32_t idx, tss_t* task_struct);
 
-// We want 5 entries for our GDT: null, kernel code, kernel data, user code, user data
+// We want 6 entries for our GDT: null, kernel code, kernel data, user code, user data, TSS
 gdt_entry_t gdt_entries[NUM_GDT_ENTRIES];
 gdt_ptr_t gdt_ptr;
 

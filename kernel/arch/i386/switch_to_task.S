@@ -39,6 +39,7 @@ switch_to_task_asm:
 	#  Load next task's state
 
 	# 5 = past 4 pushed regs, return val
+	# gets addr of new tcb from the stack
 	movl $(4+1), %ebx
 	movl (%esp, %ebx, 4), %esi 
 	movl %esi, curr_tcb

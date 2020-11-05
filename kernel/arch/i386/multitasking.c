@@ -115,6 +115,7 @@ void initialize_multitasking(){
   }
 
   // Get fields for populating the initial task struct
+  // Use current context; we're already running the "first" task
   uint32_t esp;
   asm("mov %%esp, %0" : "=r"(esp));
 
@@ -140,7 +141,7 @@ tcb_t* create_kernel_task(void (*entry_EIP)()){
     return 0;
   }
 
-  // Grab some memory for the process stack
+  // Grab some memory for the task's stack
   uint32_t stack_size = 1024;
   void* proc_stack = kalloc(stack_size, 0, kheap);
   uint32_t stack_bottom = (uint32_t)proc_stack + stack_size; // start at the end
