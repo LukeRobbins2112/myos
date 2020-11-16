@@ -86,7 +86,11 @@ void unlock_stuff(){
     if (task_switches_postponed_flag != 0){
       task_switches_postponed_flag = 0;
       //printf("unlock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
-      switch_to_next_task();
+
+      // This is safe b/c despite the other locks removed, at this stage IRQs are still disabled
+      // @TODO should this be schedule() instead? Right now it's okay because schedule()
+      //switch_to_next_task();
+      schedule();
     }
   }
   
@@ -216,9 +220,10 @@ tcb_t* get_next_task(){
   return next_task;
 }
 
-void block_curr_task(){
+void block_curr_task(char* msg){
   lock_scheduler();
-  printf("blocking task %d\n", curr_tcb->task_id);
+  if (!msg) msg = "";
+  printf("blocking task %d: %s\n", curr_tcb->task_id, msg);
   switch_to_next_task();
   unlock_scheduler();
 }
@@ -246,6 +251,14 @@ void unblock_task(tcb_t* task, uint8_t preempt){
 }
 
 void schedule(){
+  // If there are still outstanding locks, don't switch yet
+  // Do this here instead of switch_to_next_task because we don't want
+  // to append to ready list if we're not switching yet
+  if (postpone_task_switches_counter != 0){
+    task_switches_postponed_flag = 1;
+    return; 
+  }
+  
   // Add current task to ready list
   append_ready_task(curr_tcb);
   curr_tcb->state = TASK_READY;
@@ -342,7 +355,7 @@ void terminate_task(){
 
   // Block this task (task switch will occur after unlock
   curr_tcb->state = TASK_TERMINATED;
-  block_curr_task();
+  block_curr_task("");
 
   // Now unblock the cleaner task
   unblock_task(cleanup_task, 0);
@@ -374,7 +387,7 @@ void cleanup_term_tasks(){
 
     // Block cleanup task until we need it again
     curr_tcb->state = TASK_BLOCKED;
-    block_curr_task();
+    block_curr_task("cleanup");
 
     // Unlock the scheduler
     unlock_stuff();

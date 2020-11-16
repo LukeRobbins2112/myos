@@ -87,7 +87,7 @@ void kernel_main(void) {
   // Multitasking
   initialize_multitasking();
   create_cleanup_task();
-  for (int i = 0; i < 16; i++){
+  for (int i = 0; i < 2; i++){
     create_kernel_task(&test_mt); // TID = 8
   }
   

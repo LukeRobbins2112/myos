@@ -66,7 +66,7 @@ void ms_sleep_until(uint64_t wake_time_ms){
   unlock_stuff();
 
   // Block the task until it wakes
-  block_curr_task();
+  block_curr_task("ms_sleep_until");
 }
 
 void ms_sleep(uint64_t sleep_duration){

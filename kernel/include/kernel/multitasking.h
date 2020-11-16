@@ -30,7 +30,7 @@ void switch_to_task(tcb_t* new_task);
 void switch_to_next_task();
 void schedule();
 void schedule_under_lock();
-void block_curr_task();
+void block_curr_task(char* msg);
 void unblock_task(tcb_t* task, uint8_t preempt);
 void terminate_task();
 

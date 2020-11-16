@@ -21,7 +21,7 @@ gdt_flush:
 	movw %ax, %gs
 	movw %ax, %ss
 
-	# Longjump to load code register
+	# Far jump to load code register
 	jmp $0x08,$.flush
 .flush:
 	ret
