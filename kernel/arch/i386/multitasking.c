@@ -66,7 +66,7 @@ void unlock_scheduler(){
 }
 
 
-
+// Locks other than the scheduler lock
 void lock_stuff(){
 #ifndef SMP
   CLI();
@@ -88,8 +88,6 @@ void unlock_stuff(){
       //printf("unlock_stuff(): IRQ_Dis_ctr = %d -- Postpone = %d -- Flag = %d\n", IRQ_disable_counter, postpone_task_switches_counter, task_switches_postponed_flag);
 
       // This is safe b/c despite the other locks removed, at this stage IRQs are still disabled
-      // @TODO should this be schedule() instead? Right now it's okay because schedule()
-      //switch_to_next_task();
       schedule();
     }
   }
@@ -198,6 +196,8 @@ uint32_t get_task_id(){
 }
 
 void append_ready_task(tcb_t* ready_task){
+  // printf("Appending task %d\n", ready_task->task_id);
+  
   if (!task_list_head){
     task_list_head = ready_task;
     task_list_tail = ready_task;
@@ -220,16 +220,21 @@ tcb_t* get_next_task(){
   return next_task;
 }
 
+// Current task is in running state
+// Already not on the ready queue, no need to explicitly remove
 void block_curr_task(char* msg){
   lock_scheduler();
   if (!msg) msg = "";
   printf("blocking task %d: %s\n", curr_tcb->task_id, msg);
+  curr_tcb->state = TASK_BLOCKED;
   switch_to_next_task();
   unlock_scheduler();
 }
 
-void unblock_task(tcb_t* task, uint8_t preempt){
+void unblock_task(tcb_t* task, uint8_t preempt){  
   lock_scheduler();
+
+  printf("unblocking task %d: %s\n", task->task_id, preempt ? "preempt" : "no preempt");
 
   // If we're not postponing, and if either:
   // task_list is not null or we explicitly ask to preempt
@@ -260,8 +265,12 @@ void schedule(){
   }
   
   // Add current task to ready list
-  append_ready_task(curr_tcb);
-  curr_tcb->state = TASK_READY;
+  if (curr_tcb->state == TASK_RUNNING){
+    append_ready_task(curr_tcb);
+    curr_tcb->state = TASK_READY;
+  } else {
+    printf("Task %d is in non-running state; not appending to ready queue\n", curr_tcb->task_id);
+  }
 
   // Pop new task off of ready list, switch to it
   switch_to_next_task();
@@ -289,6 +298,8 @@ void switch_to_next_task(){
     
     // Switch to new task
     next_task->state = TASK_RUNNING;
+    next_task->next_task = 0; // Remove ready queue links
+    next_task->prev_task = 0; // Remove ready queue links
     switch_to_task(next_task);
   } else if (curr_tcb->state == TASK_RUNNING) {
     // Keep running if no other tasks
@@ -348,6 +359,7 @@ void terminate_task(){
   lock_stuff();
 
   // Add to terminated tasks list
+  // @TODO I think this lock_scheduler() call is superfluous
   lock_scheduler();
   curr_tcb->next_task = terminated_tasks;
   terminated_tasks = curr_tcb;

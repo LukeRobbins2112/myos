@@ -55,7 +55,6 @@ void ms_sleep_until(uint64_t wake_time_ms){
 
   // Fill out sleeping task structure
   tcb_t* current_task = get_current_task();
-  current_task->state = TASK_BLOCKED;
   new_sleeper->task = current_task;
   new_sleeper->wake_time = wake_time_ms;
 
