@@ -197,6 +197,9 @@ uint32_t get_task_id(){
 
 void append_ready_task(tcb_t* ready_task){
   // printf("Appending task %d\n", ready_task->task_id);
+
+  // Regardless of source, if we want to append ready, make it ready
+  ready_task->state = TASK_READY;
   
   if (!task_list_head){
     task_list_head = ready_task;
