@@ -33,12 +33,11 @@ void test_mt(){
       if (key.ascii_value == 'u'){
 	//schedule();
       }
-      if (key.ascii_value == 'w'){
-	breakpoint("Test");
-	//wake_sleeping_tasks();
+      if (key.ascii_value == 's'){
+	ms_sleep(100000);
       }
       if (key.ascii_value == 'w'){
-	//terminate_task();
+	terminate_task();
       }
       if (key.ascii_value == 'p'){
 	printf("Bar(%d): %d - %c\n", get_task_id(), bar++, key.ascii_value);

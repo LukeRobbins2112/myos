@@ -87,7 +87,7 @@ void wake_sleeping_tasks(){
   // For all sleeping tasks, unblock them (no pre-empting), remove the node from the queue
   // Update sleep list, and de-allocate now-unused links
   while (sleep_queue_head && sleep_queue_head->wake_time <= time_millis){
-    printf("wake_sleeping_tasks at %d\n", time_millis);
+    printf("wake_sleeping_task %d at %d\n", sleep_queue_head->task->task_id, time_millis);
     unblock_task(sleep_queue_head->task, 0);
     sleeping_task_t* to_delete = sleep_queue_head;
     sleep_queue_head = sleep_queue_head->next;
