@@ -74,16 +74,16 @@ $(ARCHDIR)/crtn.o \
 .SUFFIXES: .o .c .S
 
 # generalized way to point to end result target
-all: myos.kernel
+all: myos.bin
 
 # Final make target, the kernel
 # The entries listed after the colon are the required files
 # The actual compilation instruction are the indented following lines
 # e.g, after expansion, "i686-elf-gcc -T kernel/arch/i386/linker.ld -o ..."
 # Note that we validate the result with --is-x86-multiboot
-myos.kernel: $(OBJS) $(ARCHDIR)/linker.ld
+myos.bin: $(OBJS) $(ARCHDIR)/linker.ld
 	$(CC) -T $(ARCHDIR)/linker.ld -o $@ $(CFLAGS) $(LINK_LIST)
-	grub-file --is-x86-multiboot myos.kernel
+	grub-file --is-x86-multiboot myos.bin
 
 # Create the crtbegin/crtend files, used for loading main
 $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
@@ -99,7 +99,7 @@ $(ARCHDIR)/crtbegin.o $(ARCHDIR)/crtend.o:
 
 # Remove compiled files
 clean:
-	rm -f myos.kernel
+	rm -f myos.bin
 	rm -f $(OBJS) *.o */*.o */*/*.o
 	rm -f $(OBJS:.o=.d) *.d */*.d */*/*.d
 
@@ -114,9 +114,9 @@ install-headers:
 
 # Create boot directory, e.g. /sysroot/usr/boot
 # Copy the kernel there
-install-kernel: myos.kernel
+install-kernel: myos.bin
 	mkdir -p $(DESTDIR)$(BOOTDIR)
-	cp myos.kernel $(DESTDIR)$(BOOTDIR)
+	cp myos.bin $(DESTDIR)$(BOOTDIR)
 
 # Include all of the files in OBJS, with .d extension
 # e.g. for foo.o include foo.d
