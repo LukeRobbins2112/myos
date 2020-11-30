@@ -1,4 +1,6 @@
 *.iso
+*.img
+*.bin
 isodir
 sysroot
 bochsout.txt
