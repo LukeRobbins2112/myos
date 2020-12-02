@@ -13,6 +13,9 @@ mkdir -p isodir/boot/grub
 # cp sysroot/boot/myos.kernel isodir/boot/myos.kernel
 cp sysroot/boot/myos.bin isodir/boot/myos.bin
 
+# Run grub-mkrescue to create the iso for CDROM images
+grub-mkrescue -o myos.iso isodir
+
 # Create disk image from template, add kernel & grub config
 cp template.img myos_disk.img
 #FREE_LOOP=$(losetup -f)
@@ -35,8 +38,6 @@ EOF
 sudo cp sysroot/boot/myos.bin /mnt/boot/myos.bin
 sudo cp isodir/boot/grub/grub.cfg /mnt/boot/grub/grub.cfg
 
-# Run grub-mkrescue to create the iso
-grub-mkrescue -o myos.iso isodir
 
 # now unmount the image
 sudo umount /mnt
