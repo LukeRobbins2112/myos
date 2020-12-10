@@ -15,6 +15,7 @@
 #include <kernel/multitasking.h>
 #include <common/inline_assembly.h>
 #include <kernel/sleep.h>
+#include <kernel/ata.h>
 
 extern void jump_usermode();
 
@@ -82,6 +83,9 @@ void kernel_main(void) {
   initialize_PIT_timer(PIT_OUTPUT_FREQ);
   initialize_ps2_controller();
   initialize_keyboard_state();
+
+  // Initialize disk
+  detect_and_init();
 
   // Multitasking
   initialize_multitasking();
