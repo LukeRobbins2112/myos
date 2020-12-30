@@ -2,6 +2,8 @@
 #include <common/inline_assembly.h>
 #include <stdio.h>
 
+// Flag to track current drive selection
+uint8_t CURRENT_DRIVE = MASTER_DRIVE;
 
 
 void detect_and_init(){
@@ -110,8 +112,115 @@ void detect_and_init(){
 
   for (int i = 0; i < 256; i++){
     identify_data[i] = inw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF);
+    printf("%x ", (uint32_t)identify_data[i]);
+    if (i && i % 8 == 0){
+      printf("\n");
+    }
   }
 
   printf("Read identify data\n");
   STI();
+}
+
+
+unit8_t read_status(uint8_t drive){
+
+  unit8_t status;
+
+  // No matter which drive is requested, we first must check the
+  // status of the currently selected drive to make sure that it
+  // is not actively modifying status
+  status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+  uint8_t mask = BSY | DRQ | ERR;
+  uint8_t pollcount = 0;
+  while (status & mask){
+    status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+    pollount++;
+    if (pollcount % 100 == 0){
+      printf("poll count = %d\n", pollcount);
+    }
+  }
+
+  // If not current drive, select and wait for change
+  if (drive != CURRENT_DRIVE){
+    printf("Reading status from non-active drive\n");
+    outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, drive);
+    for (int i 0; i < 4; i++){
+      status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+    }
+
+    CURRENT_DRIVE = drive;
+  }
+
+  // Now get the status value we'll actually use
+  status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+  return status;
+}
+
+void write_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
+  // Read LBA mode
+  // @TODO this assumes master drive
+  outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, LBA_MODE);
+
+  // Sectorcount high byte
+  outb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF, (sector_count >> 8) & 0xFF);
+
+  // LBA bytes 4, 5, 6
+  outb(PRIMARY_BUS_PORT_BASE + LBA_LO_REG_OFF, (LBA_low4 >> 24) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF, (LBA_high2) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF, (LBA_high2 >> 8) & 0xFF);
+
+  // Sectorcount low byte
+  outb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF, (sector_count) & 0xFF);
+
+  // LBA bytes 1, 2, 3
+  outb(PRIMARY_BUS_PORT_BASE + LBA_LO_REG_OFF, (LBA_low4) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF, (LBA_low4 >> 8) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF, (LBA_low4 >> 16) & 0xFF);
+
+  // Write command
+  outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, WRITE_SECTORS_EXT);
+}
+
+void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
+
+  // Read LBA mode
+  // @TODO this assumes master drive
+  outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, LBA_MODE);
+
+  // Sectorcount high byte
+  outb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF, (sector_count >> 8) & 0xFF);
+
+  // LBA bytes 4, 5, 6
+  outb(PRIMARY_BUS_PORT_BASE + LBA_LO_REG_OFF, (LBA_low4 >> 24) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF, (LBA_high2) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF, (LBA_high2 >> 8) & 0xFF);
+
+  // Sectorcount low byte
+  outb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF, (sector_count) & 0xFF);
+
+  // LBA bytes 1, 2, 3
+  outb(PRIMARY_BUS_PORT_BASE + LBA_LO_REG_OFF, (LBA_low4) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF, (LBA_low4 >> 8) & 0xFF);
+  outb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF, (LBA_low4 >> 16) & 0xFF);
+
+  // Read sectors command
+  outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, READ_SECTORS_EXT);
+}
+
+
+void read_sectors(){
+  uint16_t data[256];
+  for (int i = 0; i < 256; i++){
+    data[i] = inw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF);
+  }
+}
+
+void write_sectors(uint16_t data[256]){
+  for (int i = 0; i < 256; i++){
+    outw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF, data[i]);
+  }
+  
+  // Cache flush
+  outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, FLUSH_CACHE);
 }

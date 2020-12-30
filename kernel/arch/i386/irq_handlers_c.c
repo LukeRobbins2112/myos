@@ -122,9 +122,11 @@ void irq13_handler(void) {
 }
  
 void irq14_handler(void) {
+  breakpoint("irq14");
   PIC_sendEOI(14);
 }
  
 void irq15_handler(void) {
+  breakpoint("irq15");
   PIC_sendEOI(15);
 }

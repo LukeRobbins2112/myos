@@ -26,7 +26,10 @@
 // Controller Port Commands
 // ----------------------------------------
 
-#define IDENTIFY 0xEC
+#define READ_SECTORS_EXT  0x24
+#define WRITE_SECTORS_EXT 0x34
+#define FLUSH_CACHE 0xE7
+#define IDENTIFY          0xEC
 
 // ----------------------------------------
 // Status Register Bitflag Codes
@@ -43,13 +46,22 @@
 
 #define INVALID_ATA_STATUS 0xFF
 
+// ----------------------------------------
+// Read / Write Constants
+// ----------------------------------------
+
+#define LBA_MODE    0x40
+
+extern uint8_t CURRENT_DRIVE;
 
 // ----------------------------------------
 // Driver implementation
 // ----------------------------------------
 
 void detect_and_init();
-
+uint8_t read_status(uint8_t drive);
+void write_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2);
+void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2);
 
 
 #endif

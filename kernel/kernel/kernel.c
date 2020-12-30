@@ -87,6 +87,8 @@ void kernel_main(void) {
   // Initialize disk
   detect_and_init();
 
+  read_pio(1, 10, 0);
+
   // Multitasking
   initialize_multitasking();
   create_cleanup_task();
