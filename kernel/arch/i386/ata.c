@@ -122,10 +122,51 @@ void detect_and_init(){
   STI();
 }
 
+// Returns status (1 = success, 0 = failure)
+uint8_t select_drive(uint8_t drive){
+  // Already selected, nothing to do
+  if (drive == CURRENT_DRIVE){
+    return 0;
+  }
 
-unit8_t read_status(uint8_t drive){
+  uint8_t status;
 
-  unit8_t status;
+  // No matter which drive is requested, we first must check the
+  // status of the currently selected drive to make sure that it
+  // is not actively modifying status
+  status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+  uint8_t mask = BSY | DRQ | ERR;
+  if (status & mask){
+    printf("Not ready to select drive\n");
+  }
+
+  
+  // Select drive, then delay 400ns
+  outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, drive);
+  for (int i = 0; i < 4; i++){
+    inb(PRIMARY_BUS_ALT_STATUS);
+  }
+
+  // Read the Status register to clear pending interrupts
+  // Ignore value
+  inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+
+  // Read Status register one more time, use this to determine status
+  status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
+
+  if (status & mask){
+    printf("Drive select failed\n");
+    return 0;
+  }
+  
+  CURRENT_DRIVE = drive;
+  return 1;
+}
+
+
+uint8_t read_status(uint8_t drive){
+
+  uint8_t status;
 
   // No matter which drive is requested, we first must check the
   // status of the currently selected drive to make sure that it
@@ -135,21 +176,22 @@ unit8_t read_status(uint8_t drive){
   uint8_t pollcount = 0;
   while (status & mask){
     status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
-    pollount++;
+    pollcount++;
     if (pollcount % 100 == 0){
       printf("poll count = %d\n", pollcount);
     }
   }
 
+  printf("Drive done, about to select drive; pollcount= %d\n", pollcount);
+
   // If not current drive, select and wait for change
   if (drive != CURRENT_DRIVE){
     printf("Reading status from non-active drive\n");
     outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, drive);
-    for (int i 0; i < 4; i++){
+    for (int i = 0; i < 4; i++){
       status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
     }
 
-    CURRENT_DRIVE = drive;
   }
 
   // Now get the status value we'll actually use

@@ -1,12 +1,18 @@
 #ifndef _ATA_H
 #define _ATA_H
 
+#include <stdint.h>
+
 // ----------------------------------------
 // Controller I/O Port Registers
 // ----------------------------------------
 
 #define PRIMARY_BUS_PORT_BASE       0x1F0
 #define SECONDARY_BUS_PORT_BASE     0x170
+#define PRIMARY_BUS_CTRL_BASE       0x3F6
+#define SECONDARY_BUS_CTRL_BASE     0x376
+#define PRIMARY_BUS_ALT_STATUS      0x3F6
+#define SECONDARY_BUS_ALT_STATUS    0x376
 
 #define MASTER_DRIVE 0xA0
 #define SLAVE_DRIVE  0xB0
