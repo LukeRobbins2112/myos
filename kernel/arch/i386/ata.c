@@ -1,6 +1,7 @@
 #include <kernel/ata.h>
 #include <common/inline_assembly.h>
 #include <stdio.h>
+#include <kernel/timer.h>
 
 // Flag to track current drive selection
 uint8_t CURRENT_DRIVE = MASTER_DRIVE;
@@ -124,10 +125,6 @@ void detect_and_init(){
 
 // Returns status (1 = success, 0 = failure)
 uint8_t select_drive(uint8_t drive){
-  // Already selected, nothing to do
-  if (drive == CURRENT_DRIVE){
-    return 0;
-  }
 
   uint8_t status;
 
@@ -138,9 +135,14 @@ uint8_t select_drive(uint8_t drive){
   uint8_t mask = BSY | DRQ | ERR;
   if (status & mask){
     printf("Not ready to select drive\n");
+    return 0;
   }
 
-  
+  // Already selected, nothing to do
+  if (drive == CURRENT_DRIVE){
+    return 1;
+  }
+
   // Select drive, then delay 400ns
   outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, drive);
   for (int i = 0; i < 4; i++){
@@ -200,7 +202,7 @@ uint8_t read_status(uint8_t drive){
 }
 
 void write_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
-  // Read LBA mode
+  //Write LBA mode
   // @TODO this assumes master drive
   outb(PRIMARY_BUS_PORT_BASE + DRIVE_HEAD_REG_OFF, LBA_MODE);
 
@@ -225,6 +227,7 @@ void write_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
 }
 
 void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
+  printf("About to read LBA48 mode\n");
 
   // Read LBA mode
   // @TODO this assumes master drive
@@ -238,6 +241,25 @@ void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
   outb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF, (LBA_high2) & 0xFF);
   outb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF, (LBA_high2 >> 8) & 0xFF);
 
+  // Confirm first set of data written correctly
+  uint8_t sect_hi = inb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF);
+  uint8_t lba_lo = inb(PRIMARY_BUS_PORT_BASE + LBA_LO_REG_OFF);
+  uint8_t lba_mid = inb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF);
+  uint8_t lba_hi = inb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF);
+  printf("sect_hi: %d\nlba_lo: %d\nlba_mid: %d\nlba_hi: %d\n", sect_hi, lba_lo, lba_mid, lba_hi);
+  if (sect_hi != (sector_count >> 8) & 0xFF){
+    printf("diff sect_hi");
+  }
+  if (lba_lo != (LBA_low4 >> 24) & 0xFF){
+    printf("lba_lo different");
+  }
+  if (lba_mid != (LBA_high2) & 0xFF){
+    printf("lba_mid different");
+  }
+  if (lba_hi != (LBA_high2 >> 8) & 0xFF){
+    printf("lba_hi different");
+  }
+
   // Sectorcount low byte
   outb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF, (sector_count) & 0xFF);
 
@@ -246,15 +268,83 @@ void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
   outb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF, (LBA_low4 >> 8) & 0xFF);
   outb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF, (LBA_low4 >> 16) & 0xFF);
 
+  // Confirm second set of data written correctly
+  uint8_t sect_lo = inb(PRIMARY_BUS_PORT_BASE + SECT_COUNT_REG_OFF);
+  lba_lo = inb(PRIMARY_BUS_PORT_BASE + LBA_LO_REG_OFF);
+  lba_mid = inb(PRIMARY_BUS_PORT_BASE + LBA_MID_REG_OFF);
+  lba_hi = inb(PRIMARY_BUS_PORT_BASE + LBA_HI_REG_OFF);
+  printf("sect_lo: %d\nlba_lo: %d\nlba_mid: %d\nlba_hi: %d\n", sect_lo, lba_lo, lba_mid, lba_hi);
+  if (sect_lo != (sector_count) & 0xFF){
+    printf("diff sect_lo");
+  }
+  if (lba_lo != (LBA_low4) & 0xFF){
+    printf("lba_lo different");
+  }
+  if (lba_mid != (LBA_low4 >> 8) & 0xFF){
+    printf("lba_mid different");
+  }
+  if (lba_hi != (LBA_low4 >> 16) & 0xFF){
+    printf("lba_hi different");
+  }
+
   // Read sectors command
   outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, READ_SECTORS_EXT);
+
+  // Poll for DRQ
+  if (ata_wait(DRQ, ATA_WAIT)) {
+    // read_sectors();
+  }
 }
 
+uint8_t ata_wait(uint8_t flag, uint8_t mode){
+  uint8_t mask = flag | ERR;
+  uint8_t status = 0;
+
+  // Continuously poll until response
+  if (mode == ATA_WAIT){
+    while (!status){
+      status = (inb(PRIMARY_BUS_ALT_STATUS) & mask);
+    }
+  } else {
+    status = (inb(PRIMARY_BUS_ALT_STATUS) & mask);
+  }
+
+  // If we error out, return failure
+  if (status & ERR){
+    return 0;
+  }
+
+  // Otherwise the desired flag(s) set
+  // Return the status since multiple may be set
+  return status;
+}
+
+void check_PIO_status(){
+  uint8_t status = inb(PRIMARY_BUS_ALT_STATUS);
+  uint8_t mask = ERR | DRQ | ERR;
+
+  if (!(status & mask)){
+    printf("No flags set\n");
+    return;
+  }
+
+  if (status & ERR){
+    printf("PIO error\n");
+  }
+  if (status & DRQ){
+    printf("DRQ set\n");
+  }
+  if (status & ERR){
+    printf("PIO BSY\n");
+  }
+  
+}
 
 void read_sectors(){
   uint16_t data[256];
   for (int i = 0; i < 256; i++){
     data[i] = inw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF);
+    // printf("%x\n", data[i]);
   }
 }
 
@@ -265,4 +355,29 @@ void write_sectors(uint16_t data[256]){
   
   // Cache flush
   outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, FLUSH_CACHE);
+}
+
+void reset_controller(){
+  // Send reset command
+  outb(PRIMARY_BUS_CTRL_BASE + DEV_CTRL_REG, SRST);
+
+  printf("Wasting 5 uS\n");
+
+  // Clear reset command
+  outb(PRIMARY_BUS_CTRL_BASE + DEV_CTRL_REG, SRST_CLEAR);
+
+  // Wait 2 mS for controller to come out of reset
+  uint64_t end = (uint64_t)ms_since_boot() + 3;
+  while((uint64_t)ms_since_boot() < end){
+    // wait
+  }
+
+  while(inb(PRIMARY_BUS_ALT_STATUS) & BSY){
+    // Wait
+  }
+
+  printf("Wasting another 5 uS\n");
+
+  // Read error register, don't need val
+  inb(PRIMARY_BUS_PORT_BASE + ERR_REG_OFF);
 }

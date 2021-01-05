@@ -31,6 +31,9 @@ void test_mt(){
     // infinite loop
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
+      if (key.ascii_value == 'a'){
+	check_PIO_status();
+      }
       if (key.ascii_value == 'u'){
 	//schedule();
       }
@@ -86,7 +89,9 @@ void kernel_main(void) {
 
   // Initialize disk
   detect_and_init();
+  reset_controller();
 
+  select_drive(MASTER_DRIVE);
   read_pio(1, 10, 0);
 
   // Multitasking
@@ -115,6 +120,9 @@ void kernel_main(void) {
     // infinite loop
     key_input_t key;
     if (pop_key_event(&key) && !key.rel_if_set){
+      if (key.ascii_value == 'a'){
+	check_PIO_status();
+      }
       if (key.ascii_value == 'u'){
 	//schedule();
       }

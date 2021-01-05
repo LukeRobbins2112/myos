@@ -16,7 +16,8 @@
 
 #define MASTER_DRIVE 0xA0
 #define SLAVE_DRIVE  0xB0
- 
+
+// IO Port register offsets
 #define DATA_REG_OFF        0x0
 #define ERR_REG_OFF         0x1
 #define FEATURE_REG_OFF     0x1
@@ -28,14 +29,27 @@
 #define STATUS_REG_OFF      0x7
 #define CMD_REG_OFF         0x7
 
+// Control register offfsets 
+#define ALT_STATUS_REG     0x0
+#define DEV_CTRL_REG       0x1
+#define DRIVE_ADDR_REG     0x1
+
 // ----------------------------------------
-// Controller Port Commands
+// Command Port Commands
 // ----------------------------------------
 
 #define READ_SECTORS_EXT  0x24
 #define WRITE_SECTORS_EXT 0x34
 #define FLUSH_CACHE 0xE7
 #define IDENTIFY          0xEC
+
+// ----------------------------------------
+// Control Port Commands
+// ----------------------------------------
+
+#define SRST_CLEAR 0x0
+#define nIEN       0x2
+#define SRST       0x4
 
 // ----------------------------------------
 // Status Register Bitflag Codes
@@ -56,7 +70,11 @@
 // Read / Write Constants
 // ----------------------------------------
 
-#define LBA_MODE    0x40
+#define LBA_MODE  0x40
+
+// Polling mode, either once or immediate
+#define ATA_ONCE  0x0
+#define ATA_WAIT  0x1
 
 extern uint8_t CURRENT_DRIVE;
 
@@ -65,9 +83,15 @@ extern uint8_t CURRENT_DRIVE;
 // ----------------------------------------
 
 void detect_and_init();
+void reset_controller();
 uint8_t read_status(uint8_t drive);
+uint8_t select_drive(uint8_t drive);
+uint8_t ata_wait(uint8_t status, uint8_t mode);
+void check_PIO_status();
 void write_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2);
 void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2);
+void read_sectors();
+void write_sectors();
 
 
 #endif
