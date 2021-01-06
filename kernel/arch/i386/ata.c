@@ -224,10 +224,28 @@ void write_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
 
   // Write command
   outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, WRITE_SECTORS_EXT);
+
+  // Wait for BSY to clear
+  while(inb(PRIMARY_BUS_ALT_STATUS) & BSY){
+    // Wait
+  }
+  
+  // Write data
+  if (ata_wait(DRQ, ATA_WAIT)){
+    for (uint16_t i = 0; i < 256; i++){
+      outw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF, i);
+    }
+    // Flush Cache
+    outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, FLUSH_CACHE);
+  }
 }
 
 void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
   printf("About to read LBA48 mode\n");
+
+  // Send null bytes
+  outb(PRIMARY_BUS_PORT_BASE + FEATURE_REG_OFF, 0x0);
+  outb(PRIMARY_BUS_PORT_BASE + FEATURE_REG_OFF, 0x0);
 
   // Read LBA mode
   // @TODO this assumes master drive
@@ -292,7 +310,7 @@ void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
 
   // Poll for DRQ
   if (ata_wait(DRQ, ATA_WAIT)) {
-    // read_sectors();
+    read_sectors();
   }
 }
 
@@ -344,7 +362,10 @@ void read_sectors(){
   uint16_t data[256];
   for (int i = 0; i < 256; i++){
     data[i] = inw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF);
-    // printf("%x\n", data[i]);
+    printf("%x ", data[i]);
+    if (i && i % 8 == 0){
+      printf("\n");
+    }
   }
 }
 
