@@ -38,3 +38,47 @@ void remap_PIC(uint8_t master_offset, uint8_t slave_offset){
   outb(PIC2_DATA, 0xFF);
   io_wait();
 }
+
+void IRQ_set_mask(uint8_t IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(IRQline < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        IRQline -= 8;
+    }
+    value = inb(port) | (1 << IRQline);
+    outb(port, value);        
+}
+ 
+void IRQ_clear_mask(uint8_t IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(IRQline < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        IRQline -= 8;
+    }
+    value = inb(port) & ~(1 << IRQline);
+    outb(port, value);        
+}
+
+// Managing the ISR and IRR
+// ocw = operational control word
+static uint16_t pic_get_irq_reg(int ocw3){
+  outb(PIC1_COMMAND, ocw3);
+  outb(PIC2_COMMAND, ocw3);
+  return (inb(PIC2_COMMAND) << 8 | inb(PIC1_COMMAND));
+}
+
+uint16_t pic_get_irr(){
+  return pic_get_irq_reg(PIC_READ_IRR);
+}
+
+uint16_t pic_get_isr(){
+  return pic_get_irq_reg(PIC_READ_ISR);
+}
