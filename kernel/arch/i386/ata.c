@@ -2,6 +2,7 @@
 #include <common/inline_assembly.h>
 #include <stdio.h>
 #include <kernel/timer.h>
+#include <kernel/PIC.h>
 
 // Flag to track current drive selection
 uint8_t CURRENT_DRIVE = MASTER_DRIVE;
@@ -10,6 +11,15 @@ uint8_t CURRENT_DRIVE = MASTER_DRIVE;
 void detect_and_init(){
 
   CLI();
+
+  // Unmask slave PIC and ATA IRQ
+  // Unmask IRQ2
+  outb(PIC1_DATA, ~(0x4)); // mask = 1111 1011
+  io_wait();
+
+  // Unmask IRQ14
+  outb(PIC2_DATA, ~(0x40)); // mask = 1011 1111
+  io_wait();
 
   // Check for floating bus (no drive)
   uint8_t initial_status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
@@ -308,10 +318,16 @@ void read_pio(uint16_t sector_count, uint32_t LBA_low4, uint16_t LBA_high2){
   // Read sectors command
   outb(PRIMARY_BUS_PORT_BASE + CMD_REG_OFF, READ_SECTORS_EXT);
 
-  // Poll for DRQ
-  if (ata_wait(DRQ, ATA_WAIT)) {
-    read_sectors();
+  // Wait a bit
+  uint64_t end = (uint64_t)ms_since_boot() + 1000;
+  while((uint64_t)ms_since_boot() < end){
+    // wait
   }
+  
+  // Poll for DRQ
+  /* if (ata_wait(DRQ, ATA_WAIT)) { */
+  /*   read_sectors(); */
+  /* } */
 }
 
 uint8_t ata_wait(uint8_t flag, uint8_t mode){

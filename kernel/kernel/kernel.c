@@ -89,11 +89,11 @@ void kernel_main(void) {
 
   // Initialize disk
   detect_and_init();
-  reset_controller();
+  //reset_controller();
 
   select_drive(MASTER_DRIVE);
-  write_pio(1, 10, 0);
-  select_drive(MASTER_DRIVE);
+  //write_pio(1, 10, 0);
+  // select_drive(MASTER_DRIVE);
   read_pio(1, 10, 0);
 
   // Multitasking
