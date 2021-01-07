@@ -74,59 +74,85 @@ void irq1_handler(void) {
 }
  
 void irq2_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(2);
 }
  
 void irq3_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(3);
 }
  
 void irq4_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(4);
 }
  
 void irq5_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(5);
 }
  
 void irq6_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(6);
 }
  
 void irq7_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(7);
 }
  
 void irq8_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(8);
 }
  
 void irq9_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(9);
 }
  
 void irq10_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(10);
 }
  
 void irq11_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(11);
 }
  
 void irq12_handler(void) {
+  //breakpoint("irq14");
   PIC_sendEOI(12);
 }
  
 void irq13_handler(void) {
+  //  breakpoint("irq14");
   PIC_sendEOI(13);
 }
  
 void irq14_handler(void) {
+  printf("IRQ 14\n");
   breakpoint("irq14");
   PIC_sendEOI(14);
 }
  
 void irq15_handler(void) {
+  // Make sure IRQ is real
+  uint16_t isr = pic_get_isr();
+  if (!(isr & (1 << 15))){
+    printf("Spurious IRQ 15\n");
+    
+    // Only send EOI to 2
+    PIC_sendEOI(2);
+    return;
+  }
+
+  printf("IRQ15 is real\n");
   breakpoint("irq15");
   PIC_sendEOI(15);
+
+  
 }
