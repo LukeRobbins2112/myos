@@ -32,6 +32,9 @@
 #define ICW4_BUF_MASTER	0x0C		/* Buffered mode/master */
 #define ICW4_SFNM	0x10		/* Special fully nested (not) */
 
+// OCW3 Commands
+#define PIC_READ_IRR 0xA
+#define PIC_READ_ISR 0xB
 
 // --------------------------------
 // PIC functions
