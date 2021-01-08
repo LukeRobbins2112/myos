@@ -32,10 +32,12 @@ void remap_PIC(uint8_t master_offset, uint8_t slave_offset){
   outb(PIC2_DATA, ICW4_8086);
   io_wait();
 
-  // Restore masks
-  outb(PIC1_DATA, 0xFF);
+  // Set initial masks
+  // PIC1_DATA: Unmask IRQs 0, 1, 2
+  // PIC2_DATA: Unmask IRQs 14
+  outb(PIC1_DATA, ~(0x07));
   io_wait();
-  outb(PIC2_DATA, 0xFF);
+  outb(PIC2_DATA, ~(0x40));
   io_wait();
 }
 

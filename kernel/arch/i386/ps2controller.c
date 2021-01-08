@@ -218,8 +218,5 @@ void initialize_ps2_controller(){
   response = read_data_port();
   //printf("Set typing rates response: %x\n", response);
 
-  // Unmask IRQ0 and IRQ1
-  outb(PIC1_DATA, ~(0x3)); // mask = 1111 1101
-
 }
     

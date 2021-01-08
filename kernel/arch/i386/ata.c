@@ -12,15 +12,6 @@ void detect_and_init(){
 
   CLI();
 
-  // Unmask slave PIC and ATA IRQ
-  // Unmask IRQ2
-  outb(PIC1_DATA, ~(0x4)); // mask = 1111 1011
-  io_wait();
-
-  // Unmask IRQ14
-  outb(PIC2_DATA, ~(0x40)); // mask = 1011 1111
-  io_wait();
-
   // Check for floating bus (no drive)
   uint8_t initial_status = inb(PRIMARY_BUS_PORT_BASE + STATUS_REG_OFF);
   if (initial_status == INVALID_ATA_STATUS){
