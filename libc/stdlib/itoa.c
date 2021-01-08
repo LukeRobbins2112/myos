@@ -54,6 +54,50 @@ char* itoa(int value, char* str, int base){
   return str;
 }
 
+char* ltoa(uint64_t value, char* str, int base){
+
+  int i = 0;
+  int isNegative = 0;
+  
+  // Handle zero explicitly
+  if (value == 0) 
+    { 
+      str[i++] = '0'; 
+      str[i] = '\0'; 
+      return str; 
+    } 
+
+  // Handle negative numbers in base 10
+  if (base == 10 && value < 0){
+    value = -value;
+    isNegative = 1;
+  }
+
+  // Perform the actual conversion
+  while(value){
+    int lowDigit = value % base;
+
+    // For logDigit > 9, convert to hex equivalent
+    str[i++] = (lowDigit > 9) ? ((lowDigit - 10) + 'A') : (lowDigit + '0');
+
+    value /= base;
+  }
+
+  // Append sign if necessary
+  if (isNegative){
+    str[i++] = '-';
+  }
+
+  // Add null terminator
+  str[i] = '\0';
+
+  // Reverse string to get result
+  // len is i, not (i+1), because we don't want to include null terminator
+  reverse(str, i);
+
+  return str;
+}
+
 char* utoa(uint32_t value, char* str, uint32_t base){
 
   int i = 0;

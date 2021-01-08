@@ -76,6 +76,19 @@ int printf(const char* restrict format, ...) {
 		  if (!print(numString, len)){
 		    return -1;
 		  }
+		} else if (*format == 'l') {
+		  format++;
+		  uint64_t num = va_arg(parameters, uint64_t);
+		  char buf[32];
+		  char* numString = ltoa(num, buf, 10);
+		  size_t len = strlen(numString);
+		  if (maxrem < len){
+		    // TODO set errno to EOVERFLOW
+		    return -1;
+		  }
+		  if (!print(numString, len)){
+		    return -1;
+		  }
 		} else if (*format == 'x') {
 		  format++;
 		  uint32_t num = va_arg(parameters, uint32_t);

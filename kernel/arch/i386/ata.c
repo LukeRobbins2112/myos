@@ -1,6 +1,7 @@
 #include <kernel/ata.h>
 #include <common/inline_assembly.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <kernel/timer.h>
 #include <kernel/PIC.h>
 
@@ -114,13 +115,28 @@ void detect_and_init(){
 
   for (int i = 0; i < 256; i++){
     identify_data[i] = inw(PRIMARY_BUS_PORT_BASE + DATA_REG_OFF);
-    printf("%x ", (uint32_t)identify_data[i]);
     if (i && i % 8 == 0){
       printf("\n");
     }
+    printf("%x ", identify_data[i]);
+  }
+  printf("Read identify data\n");
+
+  if (identify_data[83] & (0x1 << 10)){
+    printf("48 LBA mode supported\n");
+  } else {
+    printf("48 bit LBA mode not supported\n");
   }
 
-  printf("Read identify data\n");
+  
+  uint64_t lba48_num_sectors;
+  memcpy(&lba48_num_sectors, &identify_data[100], sizeof(uint64_t));
+  printf("Num addressable 48 bit LBA sectors: %l\n", lba48_num_sectors);
+  printf("100: %d\n", identify_data[100]);
+  printf("101: %d\n", identify_data[101]);
+  printf("102: %d\n", identify_data[102]);
+  printf("103: %d\n", identify_data[103]);
+  
   STI();
 }
 

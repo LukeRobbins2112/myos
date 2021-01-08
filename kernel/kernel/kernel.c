@@ -87,13 +87,15 @@ void kernel_main(void) {
   initialize_ps2_controller();
   initialize_keyboard_state();
 
+  printf("Testing print: %l\n", 0x200000000);
+
   // Initialize disk
   detect_and_init();
   //reset_controller();
 
   select_drive(MASTER_DRIVE);
-  //write_pio(1, 10, 0);
-  // select_drive(MASTER_DRIVE);
+  write_pio(1, 10, 0);
+  select_drive(MASTER_DRIVE);
   read_pio(1, 10, 0);
 
   // Multitasking

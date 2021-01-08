@@ -14,6 +14,7 @@ __attribute__((__noreturn__))
 void abort(void);
 
 char* itoa(int value, char* str, int base);
+char* ltoa(uint64_t value, char* str, int base);
 char* utoa(uint32_t value, char* str, uint32_t base);  
 
   
